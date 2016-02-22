@@ -28,6 +28,8 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.7</java.version>
 		<log4j.version>2.5</log4j.version>
+		<commonsio.version>2.4</commonsio.version>
+		<osmosis.version>0.44.1</osmosis.version>
 		<junit.version>4.12</junit.version>
 		<mockito.version>1.10.19</mockito.version>
 		<plugin.license.version>1.8</plugin.license.version>
@@ -48,6 +50,21 @@
 			<groupId>org.apache.logging.log4j</groupId>
 			<artifactId>log4j-core</artifactId>
 			<version>${log4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-io</groupId>
+			<artifactId>commons-io</artifactId>
+			<version>${commonsio.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openstreetmap.osmosis</groupId>
+			<artifactId>osmosis-core</artifactId>
+			<version>${osmosis.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.openstreetmap.osmosis</groupId>
+			<artifactId>osmosis-xml</artifactId>
+			<version>${osmosis.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>
@@ -170,6 +187,7 @@
 
 	<scm>
 		<developerConnection>scm:git:git@github.com:ChrissW-R1/ParRoute.git</developerConnection>
+		<url>https://github.com/ChrissW-R1/ParRoute</url>
 	</scm>
 
 	<profiles>
