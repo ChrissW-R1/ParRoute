@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.EntityType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
@@ -22,9 +23,7 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 public class OsmHandler06Test
 {
 	/**
-	 * Test method for
-	 * {@link me.chrisswr1.parroute.io.OsmHandler06#requestEntity(long, org.openstreetmap.osmosis.core.domain.v0_6.EntityType)}
-	 * .
+	 * Test method for {@link OsmHandler06#requestEntity(long, EntityType)}.
 	 */
 	@Test
 	public void testRequestEntity()
@@ -61,22 +60,17 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for
-	 * {@link me.chrisswr1.parroute.io.OsmHandler06#getWaysOfNode(org.openstreetmap.osmosis.core.domain.v0_6.Node)}
-	 * .
+	 * Test method for {@link OsmHandler06#requestWaysOfNode(Node)}.
 	 */
 	@Test
-	public void testGetWaysOfNode()
+	public void testRequestWaysOfNode()
 	{
+		long nodeId = 42907315;
+		
 		try
 		{
-			Entity entity = OsmHandler06.requestEntity(42907315, EntityType.Node);
-			
-			Node node = null;
-			if (entity instanceof Node)
-			{
-				node = (Node)entity;
-			}
+			Node node = Mockito.mock(Node.class);
+			Mockito.when(node.getId()).thenReturn(nodeId);
 			
 			Map<Long, Way> ways = OsmHandler06.requestWaysOfNode(node);
 			Assert.assertTrue(ways.size() >= 2);
@@ -113,7 +107,7 @@ public class OsmHandler06Test
 		}
 		catch (IOException e)
 		{
-			Assert.fail("Request of ways from node 42907315 failed: " + e.getMessage());
+			Assert.fail("Request of ways from node " + nodeId + " failed: " + e.getMessage());
 		}
 	}
 }
