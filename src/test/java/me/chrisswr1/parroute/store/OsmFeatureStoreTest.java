@@ -80,7 +80,7 @@ public class OsmFeatureStoreTest
 	 * generates a new unique random id
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the generated id
 	 */
 	public long newRndId()
@@ -162,6 +162,8 @@ public class OsmFeatureStoreTest
 		Assert.assertFalse(this.store.addNode(sameNode));
 		
 		Assert.assertFalse(this.store.addNode(this.node));
+		
+		Assert.assertFalse(this.store.addNode(null));
 	}
 	
 	/**
@@ -275,6 +277,8 @@ public class OsmFeatureStoreTest
 		Assert.assertFalse(this.store.addWay(sameWay));
 		
 		Assert.assertFalse(this.store.addWay(this.way));
+		
+		Assert.assertFalse(this.store.addWay(null));
 	}
 	
 	/**
@@ -388,6 +392,8 @@ public class OsmFeatureStoreTest
 		Assert.assertFalse(this.store.addRel(sameRel));
 		
 		Assert.assertFalse(this.store.addRel(this.rel));
+		
+		Assert.assertFalse(this.store.addRel(null));
 	}
 	
 	/**
