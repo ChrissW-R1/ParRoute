@@ -5,8 +5,11 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -25,11 +28,15 @@ import org.openstreetmap.osmosis.xml.v0_6.impl.OsmHandler;
 import org.xml.sax.SAXException;
 
 /**
- * defines a collection of methods to request data from the OpenStreetMap API
+ * defines a collection of methods to request data from the OpenStreetMap API in
+ * version 0.6
  * 
  * @version 0.0.1
  * @author ChrissW-R1
  * @since 0.0.1
+ * 
+ * @see <a href="http://wiki.openstreetmap.org/wiki/API_v0.6">API v0.6 –
+ *      OpenStreetMap Wiki</a>
  */
 public class OsmHandler06
 {
@@ -38,20 +45,14 @@ public class OsmHandler06
 	 * 
 	 * @since 0.0.1
 	 */
-	public static final Logger	LOGGER					= LogManager.getLogger(OsmHandler06.class);
+	public static final Logger	LOGGER	= LogManager.getLogger(OsmHandler06.class);
 	/**
 	 * the {@link URL} of the OpenStreetMap API
 	 * 
 	 * @since 0.0.1
 	 */
-	public static String		API_URL					= "https://api.openstreetmap.org/api/0.6/";
-	/**
-	 * the default error message of a parsing error on the API response
-	 * 
-	 * @since 0.0.1
-	 */
-	public static String		RESPONSE_PARSING_ERROR	= "An error occurred on parsing the API response!";
-														
+	public static String		API_URL	= "https://api.openstreetmap.org/api/0.6/";
+										
 	/**
 	 * private standard constructor, to prevent initialization
 	 * 
@@ -65,7 +66,7 @@ public class OsmHandler06
 	 * creates a {@link HttpURLConnection} of the given API request
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param request the request for the API
 	 * @return the {@link HttpURLConnection}
 	 * @throws IOException if the connection couldn't established
@@ -97,10 +98,79 @@ public class OsmHandler06
 	}
 	
 	/**
+	 * parse an {@link InputStream} with OpenStreetMap data XML document
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param is the {@link InputStream} to parse
+	 * @param types list of all {@link EntityType}s, which should be parsed (use
+	 *            <code>null</code> to parse all {@link EntityType}s)
+	 * @param ids list of all ids, which should be parsed (use <code>null</code>
+	 *            to parse all ids)
+	 * @return a {@link Map}, which contains all parsed {@link Entity}s
+	 * @throws IOException if an error occurred while parsing the document
+	 */
+	private static Map<Long, ? extends Entity> parseStream(InputStream is, final Collection<? extends EntityType> types, final Collection<? extends Long> ids)
+	throws IOException
+	{
+		try
+		{
+			SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
+			final Map<Long, Entity> res = new HashMap<>();
+			
+			Sink sink = new Sink()
+			{
+				@Override
+				public void release()
+				{
+				}
+				
+				@Override
+				public void complete()
+				{
+				}
+				
+				@Override
+				public void initialize(Map<String, Object> metaData)
+				{
+				}
+				
+				@Override
+				public void process(EntityContainer entityContainer)
+				{
+					Entity entity = entityContainer.getEntity();
+					long id = entity.getId();
+					
+					if (ids != null && ! (ids.contains(id)))
+					{
+						return;
+					}
+					if (types != null && ! (types.contains(entity.getType())))
+					{
+						return;
+					}
+					
+					res.put(id, entity);
+				}
+			};
+			
+			parser.parse(is, new OsmHandler(sink, true));
+			
+			return res;
+		}
+		catch (ParserConfigurationException | SAXException e)
+		{
+			String msg = "An error occurred on parsing the OpenStreetMap data XML document!";
+			OsmHandler06.LOGGER.error(msg, e);
+			throw new IOException(msg, e);
+		}
+	}
+	
+	/**
 	 * requests a OpenStreetMap feature by its id
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the requested {@link Entity}
 	 * @param type the {@link EntityType} of the requested feature
 	 * @return the requested feature
@@ -138,69 +208,92 @@ public class OsmHandler06
 			throw new IOException(msg);
 		}
 		
-		try
+		Set<EntityType> types = new HashSet<>();
+		types.add(type);
+		Set<Long> ids = new HashSet<>();
+		ids.add(id);
+		
+		Map<Long, ? extends Entity> entities = OsmHandler06.parseStream(connection.getInputStream(), types, ids);
+		IOUtils.close(connection);
+		
+		if (entities.size() < 1)
 		{
-			InputStream is = connection.getInputStream();
-			SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-			final Map<Long, Entity> entityMap = new HashMap<>();
-			
-			Sink sink = new Sink()
+			String msg = "Couldn't received the requested " + typeString + " with id " + id + "!";
+			OsmHandler06.LOGGER.error(msg);
+			throw new IOException(msg);
+		}
+		
+		return entities.values().iterator().next();
+	}
+	
+	/**
+	 * requests a list of {@link Entity}s
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param ids the ids of the requested {@link Entity}s
+	 * @param type the {@link EntityType} of the requested {@link Entity}s
+	 * @return a {@link Map} of all received {@link Entity}s
+	 * @throws IOException if the connection couldn't established or the parsing
+	 *             failed
+	 */
+	public static Map<Long, ? extends Entity> requestEntities(Collection<Long> ids, EntityType type)
+	throws IOException
+	{
+		String typeString = type.toString().toLowerCase();
+		
+		String delimiter = ",";
+		String idString = "";
+		for (long id : ids)
+		{
+			idString += id + delimiter;
+		}
+		while (idString.endsWith(delimiter))
+		{
+			idString = idString.substring(0, idString.length() - delimiter.length());
+		}
+		
+		HttpURLConnection connection = OsmHandler06.getConnection(typeString + "s?" + typeString + "s=" + idString);
+		int statusCode = connection.getResponseCode();
+		
+		OsmHandler06.LOGGER.debug("OpenStreetMap API returned HTTP status code " + statusCode + ".");
+		
+		if (statusCode >= 400)
+		{
+			String msg;
+			if (statusCode == 404)
 			{
-				@Override
-				public void release()
-				{
-				}
-				
-				@Override
-				public void complete()
-				{
-				}
-				
-				@Override
-				public void initialize(Map<String, Object> metaData)
-				{
-				}
-				
-				@Override
-				public void process(EntityContainer entityContainer)
-				{
-					Entity entity = entityContainer.getEntity();
-					long entityId = entity.getId();
-					
-					if (entityId == id && entity.getType() == type)
-					{
-						entityMap.put(entityId, entity);
-					}
-				}
-			};
-			
-			parser.parse(is, new OsmHandler(sink, true));
-			
-			if (entityMap.size() < 1)
+				msg = "No " + typeString + " with any of the ids " + idString + " couldn't found!";
+			}
+			else if (statusCode == 410)
 			{
-				String msg = "Couldn't received the requested " + typeString + " with id " + id + "!";
-				OsmHandler06.LOGGER.error(msg);
-				throw new IOException(msg);
+				msg = "All " + typeString + " with the ids " + idString + " were deleted!";
+			}
+			else
+			{
+				msg = "An unkown error occurred on requesting " + typeString + "s with ids " + idString + "!";
 			}
 			
-			Entity res = entityMap.values().iterator().next();
+			msg += "\r\n\tThe API reported:\r\n\t" + IOUtils.toString(connection.getErrorStream());
 			
-			IOUtils.close(connection);
-			
-			return res;
+			OsmHandler06.LOGGER.error(msg);
+			throw new IOException(msg);
 		}
-		catch (ParserConfigurationException | SAXException e)
-		{
-			OsmHandler06.LOGGER.error(OsmHandler06.RESPONSE_PARSING_ERROR, e);
-			throw new IOException(OsmHandler06.RESPONSE_PARSING_ERROR, e);
-		}
+		
+		Set<EntityType> types = new HashSet<>();
+		types.add(type);
+		
+		Map<Long, ? extends Entity> res = OsmHandler06.parseStream(connection.getInputStream(), types, ids);
+		IOUtils.close(connection);
+		
+		return res;
 	}
 	
 	/**
 	 * requests all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
 	 * @throws IOException if the connection couldn't established or the
@@ -211,53 +304,18 @@ public class OsmHandler06
 	{
 		HttpURLConnection connection = OsmHandler06.getConnection("node/" + node.getId() + "/ways");
 		
-		try
+		Set<EntityType> types = new HashSet<>();
+		types.add(EntityType.Way);
+		
+		Map<Long, ? extends Entity> entities = OsmHandler06.parseStream(connection.getInputStream(), types, null);
+		IOUtils.close(connection);
+		
+		Map<Long, Way> res = new HashMap<>();
+		for (long id : entities.keySet())
 		{
-			InputStream is = connection.getInputStream();
-			SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-			final Map<Long, Way> res = new HashMap<>();
-			
-			Sink sink = new Sink()
-			{
-				@Override
-				public void release()
-				{
-				}
-				
-				@Override
-				public void complete()
-				{
-				}
-				
-				@Override
-				public void initialize(Map<String, Object> metaData)
-				{
-				}
-				
-				@Override
-				public void process(EntityContainer entityContainer)
-				{
-					Entity entity = entityContainer.getEntity();
-					
-					if (entity instanceof Way)
-					{
-						Way way = (Way)entity;
-						
-						res.put(entity.getId(), way);
-					}
-				}
-			};
-			
-			parser.parse(is, new OsmHandler(sink, true));
-			
-			IOUtils.close(connection);
-			
-			return res;
+			res.put(id, (Way)entities.get(id));
 		}
-		catch (ParserConfigurationException | SAXException e)
-		{
-			OsmHandler06.LOGGER.error(OsmHandler06.RESPONSE_PARSING_ERROR, e);
-			throw new IOException(OsmHandler06.RESPONSE_PARSING_ERROR, e);
-		}
+		
+		return res;
 	}
 }
