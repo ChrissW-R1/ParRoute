@@ -80,7 +80,7 @@ public class OsmFeatureStoreTest
 	 * generates a new unique random id
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the generated id
 	 */
 	public long newRndId()
@@ -132,7 +132,7 @@ public class OsmFeatureStoreTest
 	@Test
 	public void testGetNodes()
 	{
-		Map<Long, ? extends Node> nodes = this.store.getNodes();
+		Map<? extends Long, ? extends Node> nodes = this.store.getNodes();
 		
 		Assert.assertEquals(1, nodes.size());
 		Assert.assertSame(this.node, nodes.get(OsmFeatureStoreTest.nodeId));
@@ -247,7 +247,7 @@ public class OsmFeatureStoreTest
 	@Test
 	public void testGetWays()
 	{
-		Map<Long, ? extends Way> ways = this.store.getWays();
+		Map<? extends Long, ? extends Way> ways = this.store.getWays();
 		
 		Assert.assertEquals(1, ways.size());
 		Assert.assertSame(this.way, ways.get(OsmFeatureStoreTest.wayId));
@@ -362,7 +362,7 @@ public class OsmFeatureStoreTest
 	@Test
 	public void testGetRels()
 	{
-		Map<Long, ? extends Relation> rels = this.store.getRels();
+		Map<? extends Long, ? extends Relation> rels = this.store.getRels();
 		
 		Assert.assertEquals(1, rels.size());
 		Assert.assertSame(this.rel, rels.get(OsmFeatureStoreTest.relId));

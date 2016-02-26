@@ -1,6 +1,8 @@
 package me.chrisswr1.parroute.io;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -8,6 +10,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
@@ -27,14 +30,38 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 public class OsmHandler06Test
 {
 	/**
-	 * Test method for {@link OsmHandler06#requestEntity(long, EntityType)}.
+	 * the test object
+	 * 
+	 * @since 0.0.1
+	 */
+	@SuppressWarnings("deprecation")
+	private OsmHandler06 handler;
+	
+	/**
+	 * initialize the test object
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @throws MalformedURLException if the test object couldn't initialized
+	 */
+	@SuppressWarnings("deprecation")
+	@Before
+	public void setUp()
+	throws MalformedURLException
+	{
+		this.handler = new OsmHandler06(new URL("https://api.openstreetmap.org/api/0.6/"));
+	}
+	
+	/**
+	 * Test method for {@link OsmHandler06#getEntity(long, EntityType)}.
 	 */
 	@Test
 	public void testRequestEntity()
 	{
 		try
 		{
-			Entity entity = OsmHandler06.requestEntity(269636333, EntityType.Way);
+			@SuppressWarnings("deprecation")
+			Entity entity = this.handler.getEntity(269636333, EntityType.Way);
 			Assert.assertEquals(269636333, entity.getId());
 			Assert.assertEquals(EntityType.Way, entity.getType());
 			
@@ -64,8 +91,7 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for
-	 * {@link OsmHandler06#requestEntities(Collection, EntityType)}.
+	 * Test method for {@link OsmHandler06#getEntities(Collection, EntityType)}.
 	 */
 	@Test
 	public void testRequestEntities()
@@ -80,8 +106,9 @@ public class OsmHandler06Test
 		
 		try
 		{
-			Map<Long, ? extends Entity> entities = OsmHandler06.requestEntities(new HashSet<>(Arrays.asList(ids)), EntityType.Way);
-			Set<Long> keys = entities.keySet();
+			@SuppressWarnings("deprecation")
+			Map<? extends Long, ? extends Entity> entities = this.handler.getEntities(new HashSet<>(Arrays.asList(ids)), EntityType.Way);
+			Set<? extends Long> keys = entities.keySet();
 			
 			for (long id : ids)
 			{
@@ -95,7 +122,7 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmHandler06#requestWaysOfNode(Node)}.
+	 * Test method for {@link OsmHandler06#getWaysOfNode(Node)}.
 	 */
 	@Test
 	public void testRequestWaysOfNode()
@@ -106,10 +133,11 @@ public class OsmHandler06Test
 		
 		try
 		{
-			Map<Long, ? extends Way> ways = OsmHandler06.requestWaysOfNode(node);
+			@SuppressWarnings("deprecation")
+			Map<? extends Long, ? extends Way> ways = this.handler.getWaysOfNode(node);
 			Assert.assertTrue(ways.size() >= 2);
 			
-			Set<Long> keys = ways.keySet();
+			Set<? extends Long> keys = ways.keySet();
 			
 			Assert.assertTrue(keys.contains(269636333L));
 			Assert.assertTrue(keys.contains(5881250L));
@@ -123,7 +151,7 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmHandler06#requestRelationsOfEntity(Entity)}.
+	 * Test method for {@link OsmHandler06#getRelationsOfEntity(Entity)}.
 	 */
 	@Test
 	public void testRequestRelationsOfEntity()
@@ -135,8 +163,9 @@ public class OsmHandler06Test
 		
 		try
 		{
-			Map<Long, ? extends Relation> rels = OsmHandler06.requestRelationsOfEntity(way);
-			Set<Long> keys = rels.keySet();
+			@SuppressWarnings("deprecation")
+			Map<? extends Long, ? extends Relation> rels = this.handler.getRelationsOfEntity(way);
+			Set<? extends Long> keys = rels.keySet();
 			
 			Assert.assertTrue(keys.contains(5633210L));
 			Assert.assertTrue(keys.contains(5633244L));
