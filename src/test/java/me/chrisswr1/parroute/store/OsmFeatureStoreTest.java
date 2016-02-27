@@ -30,57 +30,57 @@ public class OsmFeatureStoreTest
 	 * 
 	 * @since 0.0.1
 	 */
-	private static final long	nodeId	= 123451;
+	private static long		nodeId;
 	/**
 	 * id of {@link OsmFeatureStoreTest#way}
 	 * 
 	 * @since 0.0.1
 	 */
-	private static final long	wayId	= OsmFeatureStoreTest.nodeId + 11;
+	private static long		wayId;
 	/**
 	 * id of {@link OsmFeatureStoreTest#rel}
 	 * 
 	 * @since 0.0.1
 	 */
-	private static final long	relId	= OsmFeatureStoreTest.wayId + 11;
-										
+	private static long		relId;
+							
 	/**
 	 * test object
 	 * 
 	 * @since 0.0.1
 	 */
-	private OsmFeatureStore		store;
-								
+	private OsmFeatureStore	store;
+							
 	/**
 	 * mocked {@link Node}
 	 * 
 	 * @since 0.0.1
 	 */
-	private Node				node;
+	private Node			node;
 	/**
 	 * mocked {@link Way}
 	 * 
 	 * @since 0.0.1
 	 */
-	private Way					way;
+	private Way				way;
 	/**
 	 * mocked {@link Relation}
 	 * 
 	 * @since 0.0.1
 	 */
-	private Relation			rel;
+	private Relation		rel;
 	/**
 	 * {@link Set} of all used ids
 	 * 
 	 * @since 0.0.1
 	 */
-	private Set<Long>			rndLongs;
-								
+	private Set<Long>		rndLongs;
+							
 	/**
 	 * generates a new unique random id
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the generated id
 	 */
 	public long newRndId()
@@ -107,9 +107,10 @@ public class OsmFeatureStoreTest
 	public void setUp()
 	{
 		this.rndLongs = new LinkedHashSet<>();
-		this.rndLongs.add(OsmFeatureStoreTest.nodeId);
-		this.rndLongs.add(OsmFeatureStoreTest.wayId);
-		this.rndLongs.add(OsmFeatureStoreTest.relId);
+		
+		OsmFeatureStoreTest.nodeId = this.newRndId();
+		OsmFeatureStoreTest.wayId = this.newRndId();
+		OsmFeatureStoreTest.relId = this.newRndId();
 		
 		this.store = new OsmFeatureStore();
 		

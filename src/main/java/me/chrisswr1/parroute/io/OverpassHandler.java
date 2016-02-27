@@ -142,12 +142,14 @@ public class OverpassHandler
 																					
 	static
 	{
+		String offUrlString = "http://overpass-api.de/api/";
 		try
 		{
-			OverpassHandler.offUrl = new URL("http://overpass-api.de/api/");
+			OverpassHandler.offUrl = new URL(offUrlString);
 		}
 		catch (MalformedURLException e)
 		{
+			OverpassHandler.LOGGER.error("URL to official Overpass API endpoint is malformed: " + offUrlString, e);
 		}
 	}
 	
@@ -155,7 +157,7 @@ public class OverpassHandler
 	 * constructor, with given API {@link URL}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param apiUrl the {@link URL} of the
 	 */
 	public OverpassHandler(URL apiUrl)
@@ -187,7 +189,7 @@ public class OverpassHandler
 	 * {@link OverpassHandler#rels}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param script the Overpass QL script
 	 * @param bbox the bounding box of the request
 	 * @throws IOException if an error occurred on request the data from the
@@ -198,6 +200,8 @@ public class OverpassHandler
 	{
 		if (bbox != null)
 		{
+			OverpassHandler.LOGGER.debug("Bounding box was given: " + bbox);
+			
 			DirectPosition lowerCorner;
 			DirectPosition upperCorner;
 			
@@ -216,11 +220,15 @@ public class OverpassHandler
 			String bboxString = lowerCorner.getOrdinate(0) + "," + lowerCorner.getOrdinate(1) + "," + upperCorner.getOrdinate(0) + "," + upperCorner.getOrdinate(1);
 			
 			script = script.replace(OverpassHandler.PH_BBOX, bboxString);
+			
+			OverpassHandler.LOGGER.debug("Replaced all " + OverpassHandler.PH_BBOX + " with real bounding box: " + bboxString);
 		}
 		else
 		{
 			script = script.replace("(" + OverpassHandler.PH_BBOX + ")", "");
 			script = script.replace(OverpassHandler.PH_BBOX, "");
+			
+			OverpassHandler.LOGGER.debug("No bounding box was given. Removed all placeholders " + OverpassHandler.PH_BBOX + ".");
 		}
 		
 		script = "[out:xml][timeout:" + OverpassHandler.REQUEST_TIMEOUT + "];(" + script + ");out meta;>;out meta qt;";
@@ -229,7 +237,7 @@ public class OverpassHandler
 		{
 			for (int i = 0; i < OverpassHandler.ATTEMPTS; i++)
 			{
-				OverpassHandler.LOGGER.debug("Request features from the Overpass API with the following script: " + script);
+				OverpassHandler.LOGGER.debug("Request features by the following script (attempt " + i + "): " + script);
 				
 				String url = this.apiUrl.toString() + "interpreter?data=" + URLEncoder.encode(script, "UTF-8");
 				OverpassHandler.LOGGER.trace("Trying to connect to: " + url);
@@ -255,9 +263,9 @@ public class OverpassHandler
 					}
 					else if (statusCode == 429 || statusCode == 504)
 					{
-						IOUtils.close(httpConnection);
-						
 						OverpassHandler.LOGGER.debug("Close connection and retry after " + OverpassHandler.RETRY_DELAY + " milliseconds.");
+						
+						IOUtils.close(httpConnection);
 						
 						long stopTime = System.currentTimeMillis() + OverpassHandler.RETRY_DELAY;
 						while (System.currentTimeMillis() < stopTime)
@@ -294,29 +302,47 @@ public class OverpassHandler
 							Entity entity = entityContainer.getEntity();
 							long id = entity.getId();
 							
+							OverpassHandler.LOGGER.debug("Parsing " + entity);
+							
 							if (entity instanceof Node)
 							{
 								Node node = (Node)entity;
+								
+								OverpassHandler.LOGGER.debug("Found node with id " + id);
+								
 								OverpassHandler.this.nodes.put(id, node);
 							}
 							else if (entity instanceof Way)
 							{
 								Way way = (Way)entity;
+								
+								OverpassHandler.LOGGER.debug("Found way with id " + id);
+								
 								OverpassHandler.this.ways.put(id, way);
 								
 								for (WayNode wayNode : way.getWayNodes())
 								{
-									OverpassHandler.this.waysOfNode.put(wayNode.getNodeId(), id);
+									long nodeId = wayNode.getNodeId();
+									
+									OverpassHandler.LOGGER.trace("Store node with id " + nodeId + " as a member of " + way);
+									OverpassHandler.this.waysOfNode.put(nodeId, id);
 								}
 							}
 							else if (entity instanceof Relation)
 							{
 								Relation rel = (Relation)entity;
+								
+								OverpassHandler.LOGGER.debug("Found relation with id " + id);
+								
 								OverpassHandler.this.rels.put(id, rel);
 								
 								for (RelationMember member : rel.getMembers())
 								{
-									OverpassHandler.this.relsOfEntity.get(member.getMemberType()).put(member.getMemberId(), id);
+									EntityType memberType = member.getMemberType();
+									long memberId = member.getMemberId();
+									
+									OverpassHandler.LOGGER.trace("Store " + memberType + " with id " + memberId + " as a member of " + rel);
+									OverpassHandler.this.relsOfEntity.get(memberType).put(memberId, id);
 								}
 							}
 						}
@@ -329,11 +355,16 @@ public class OverpassHandler
 				else
 				{
 					IOUtils.close(connection);
-					throw new IOException("The URL didn't point to a connection using HTTP!");
+					
+					String msg = "The URL didn't point to a connection using HTTP!";
+					OverpassHandler.LOGGER.error(msg);
+					throw new IOException(msg);
 				}
 			}
 			
-			throw new IOException("Couldn't get a valid reponse from the Overpass API after " + OverpassHandler.ATTEMPTS + " attempts!");
+			String msg = "Couldn't get a valid reponse from the Overpass API after " + OverpassHandler.ATTEMPTS + " attempts!";
+			OverpassHandler.LOGGER.error(msg);
+			throw new IOException(msg);
 		}
 		catch (IOException e)
 		{
@@ -353,7 +384,7 @@ public class OverpassHandler
 	 * gives a {@link Node} from the store, or request it from the API
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the {@link Node}
 	 * @return the {@link Node} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -363,8 +394,12 @@ public class OverpassHandler
 	public Node getNode(long id)
 	throws IOException
 	{
+		OverpassHandler.LOGGER.debug("Get node with id " + id + ".");
+		
 		if ( ! (this.nodes.containsKey(id)))
 		{
+			OverpassHandler.LOGGER.debug("Node with id " + id + " is currently not stored. Requesting it.");
+			
 			String script = "node(" + id + ");";
 			this.requestEntities(script, null);
 		}
@@ -376,7 +411,7 @@ public class OverpassHandler
 	 * gives a {@link Way} from the store, or request it from the API
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the {@link Way}
 	 * @return the {@link Way} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -386,8 +421,12 @@ public class OverpassHandler
 	public Way getWay(long id)
 	throws IOException
 	{
+		OverpassHandler.LOGGER.debug("Get way with id " + id + ".");
+		
 		if ( ! (this.ways.containsKey(id)))
 		{
+			OverpassHandler.LOGGER.debug("Way with id " + id + " is currently not stored. Requesting it.");
+			
 			String script = "way(" + id + ");";
 			this.requestEntities(script, null);
 		}
@@ -399,7 +438,7 @@ public class OverpassHandler
 	 * gives a {@link Relation} from the store, or request it from the API
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the {@link Relation}
 	 * @return the {@link Relation} with id {@code id} or <code>null</code>, if
 	 *         it doesn't exist
@@ -409,8 +448,12 @@ public class OverpassHandler
 	public Relation getRel(long id)
 	throws IOException
 	{
+		OverpassHandler.LOGGER.debug("Get relation with id " + id + ".");
+		
 		if ( ! (this.rels.containsKey(id)))
 		{
+			OverpassHandler.LOGGER.debug("Relation with id " + id + " is currently not stored. Requesting it.");
+			
 			String script = "relation(" + id + ");";
 			this.requestEntities(script, null);
 		}
@@ -422,7 +465,7 @@ public class OverpassHandler
 	 * requests all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
 	 * @throws IOException if the connection couldn't established or the
@@ -431,10 +474,14 @@ public class OverpassHandler
 	public Set<Way> getWaysOfNode(Node node)
 	throws IOException
 	{
+		OverpassHandler.LOGGER.debug("Get all ways, on which " + node + " is a part from.");
+		
 		long id = node.getId();
 		
 		if ( ! (this.allWaysOfNodeStored.contains(id)))
 		{
+			OverpassHandler.LOGGER.debug("Not sure, if all ways of node " + node + " were stored. Requesting them.");
+			
 			String script = "node(" + id + ");<;";
 			this.requestEntities(script, null);
 			this.allWaysOfNodeStored.add(id);
@@ -453,7 +500,7 @@ public class OverpassHandler
 	 * gives all {@link Relation}s of which {@code entity} is a member
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
 	 * @return a {@link Set} of all {@link Relation}s, which have {@code entity}
 	 *         as a member
@@ -463,12 +510,16 @@ public class OverpassHandler
 	public Set<Relation> getRelsOfEntity(Entity entity)
 	throws IOException
 	{
+		OverpassHandler.LOGGER.debug("Get all relations, which have " + entity + " as a member.");
+		
 		long id = entity.getId();
 		EntityType type = entity.getType();
 		
 		Set<Long> allStoredSet = this.allRelsOfEntityStored.get(type);
 		if ( ! (allStoredSet.contains(id)))
 		{
+			OverpassHandler.LOGGER.debug("Not sure, if all ways of node " + entity + " were stored. Requesting them.");
+			
 			String script = type.toString().toLowerCase() + "(" + id + ");<;";
 			this.requestEntities(script, null);
 			allStoredSet.add(id);
@@ -487,13 +538,15 @@ public class OverpassHandler
 	 * gives all indices of a {@link Node} in a {@link Way}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the indices of
 	 * @param way the {@link Way} in which to search {@code node} for
 	 * @return a {@link Set} of all indices of {@code node} in {@code way}
 	 */
 	public Set<Integer> getIndices(Node node, Way way)
 	{
+		OverpassHandler.LOGGER.debug("Get all indices of " + node + " in " + way + ".");
+		
 		long nodeId = node.getId();
 		
 		Set<Integer> res = new HashSet<>();
@@ -515,7 +568,7 @@ public class OverpassHandler
 	 * gives all direct neighbors of a {@link Node}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to search the neighbors for
 	 * @return a {@link Set} of all found neighbors
 	 * @throws IOException if the connection couldn't established or the parsing
@@ -524,10 +577,14 @@ public class OverpassHandler
 	public Set<Node> getNeighbours(Node node)
 	throws IOException
 	{
+		OverpassHandler.LOGGER.debug("Get all direct neighbors of " + node + ".");
+		
 		Set<Node> res = new HashSet<>();
 		
 		for (Way way : this.getWaysOfNode(node))
 		{
+			OverpassHandler.LOGGER.debug("Get neighbors of " + node + " in " + way + ".");
+			
 			for (int idx : this.getIndices(node, way))
 			{
 				List<WayNode> wayNodes = way.getWayNodes();
@@ -539,7 +596,11 @@ public class OverpassHandler
 					
 					if (leftId != node.getId())
 					{
-						res.add(this.getNode(leftId));
+						Node leftNode = this.getNode(leftId);
+						
+						OverpassHandler.LOGGER.debug("Found " + leftNode + " as a neighbor before " + node + " in " + way + ".");
+						
+						res.add(leftNode);
 					}
 				}
 				
@@ -550,7 +611,11 @@ public class OverpassHandler
 					
 					if (rightId != node.getId())
 					{
-						res.add(this.getNode(rightId));
+						Node rightNode = this.getNode(rightId);
+						
+						OverpassHandler.LOGGER.debug("Found " + rightNode + " as a neighbor after " + node + " in " + way + ".");
+						
+						res.add(rightNode);
 					}
 				}
 			}

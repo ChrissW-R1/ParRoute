@@ -1,6 +1,7 @@
 package me.chrisswr1.parroute;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
@@ -92,7 +93,7 @@ public class Route
 	 * standard constructor
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param dataHandler the {@link OverpassHandler} to get the {@link Entity}s
 	 *            from
 	 * @param start the {@link Node}, where the {@link Route} should begin
@@ -150,7 +151,7 @@ public class Route
 	 * calculates the distance between two {@link Node}s
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node1 the first {@link Node}
 	 * @param node2 the second {@link Node}
 	 * @return the distance between {@code node1} and {@code node2}
@@ -164,7 +165,7 @@ public class Route
 	 * gives the {@link OverpassHandler} to get the {@link Entity}s from
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the {@link OverpassHandler} to get the {@link Entity}s from
 	 */
 	public OverpassHandler getDataHandler()
@@ -176,7 +177,7 @@ public class Route
 	 * gives the {@link Node}, where the {@link Route} starts
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the start {@link Node}
 	 */
 	public Node getStart()
@@ -188,7 +189,7 @@ public class Route
 	 * gives the destination of the {@link Route}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the destination
 	 */
 	public Node getDest()
@@ -201,7 +202,7 @@ public class Route
 	 * If no costs stored a <code>0</code> will be returned
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the calculated costs from
 	 * @return the calculated costs
 	 */
@@ -230,7 +231,7 @@ public class Route
 	 * {@code nodeId}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the neighbors from
 	 * @throws IOException if some {@link Entity}s couldn't got from the
 	 *             {@link Route#dataHandler}
@@ -238,28 +239,40 @@ public class Route
 	private void expand(Node node)
 	throws IOException
 	{
+		Route.LOGGER.trace("Expand open list to direct neighbors of " + node);
+		
 		OverpassHandler dataHandler = this.getDataHandler();
 		
+		Route.LOGGER.trace("Iterate over all direct neighbors of " + node + ".");
 		for (Node successor : dataHandler.getNeighbours(node))
 		{
+			Route.LOGGER.trace("Processing successor " + successor + ".");
+			
 			long successorId = successor.getId();
 			
 			if (this.closedList.contains(successorId))
 			{
+				Route.LOGGER.trace(successor + " was already proceeded. Ignore it.");
+				
 				continue;
 			}
 			
-			double tentative_g = this.getCalcCosts(node) + Route.calcDistance(node, successor);
+			double tentativeCosts = this.getCalcCosts(node) + Route.calcDistance(node, successor);
+			Route.LOGGER.trace("Tentative costs of " + successor + " are " + tentativeCosts + ".");
 			
-			if (this.openList.containsKey(successorId) && tentative_g >= this.getCalcCosts(successor))
+			if (this.openList.containsKey(successorId) && tentativeCosts >= this.getCalcCosts(successor))
 			{
+				Route.LOGGER.trace("The new found path to " + successor + " is more expensive than the already known one. Ignore it.");
+				
 				continue;
 			}
 			
+			Route.LOGGER.debug("Set " + node + " as  the predecessor of " + successor + ".");
 			this.predecessor.put(successorId, node.getId());
-			this.calcCosts.put(successorId, tentative_g);
+			Route.LOGGER.trace("Save tentative costs of " + tentativeCosts + " for " + successor + ".");
+			this.calcCosts.put(successorId, tentativeCosts);
 			
-			this.openList.put(successorId, tentative_g + Route.calcDistance(successor, this.getDest()));
+			this.openList.put(successorId, tentativeCosts + Route.calcDistance(successor, this.getDest()));
 		}
 	}
 	
@@ -267,7 +280,7 @@ public class Route
 	 * calculates the {@link Route}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return <code>true</code> if a path was found, <code>false</code>
 	 *         otherwise
 	 * @throws IOException if some {@link Entity}s couldn't got from the
@@ -276,41 +289,58 @@ public class Route
 	public boolean calc()
 	throws IOException
 	{
-		this.openList.put(this.getStart().getId(), 0D);
+		Node start = this.getStart();
+		Node dest = this.getDest();
+		Route.LOGGER.debug("Start calculation of the path beween " + start + " and " + dest + ".");
+		
+		this.openList.put(start.getId(), 0D);
 		this.notCalc = false;
 		
 		do
 		{
 			long currentNode = CollectionUtils.min(this.openList).getKey();
-			Route.LOGGER.debug("Proceeding node " + currentNode);
+			Route.LOGGER.debug("Processing node with id " + currentNode + ".");
+			Route.LOGGER.trace("Remove " + currentNode + " from open list.");
 			this.openList.remove(currentNode);
 			
 			Node node = this.getDataHandler().getNode(currentNode);
-			double lat = node.getLatitude();
-			double lng = node.getLongitude();
-			double diff = 0.0000001;
-			URLConnection connection = (new URL("http://127.0.0.1:8111/load_and_zoom?left=" + (lng - diff) + "&top=" + (lat + diff) + "&right=" + (lng + diff) + "&bottom=" + (lat - diff) + "&select=node" + currentNode)).openConnection();
-			connection.connect();
-			if (connection instanceof HttpURLConnection)
+			try
 			{
-				HttpURLConnection httpConnection = (HttpURLConnection)connection;
-				httpConnection.getResponseCode();
+				double lat = node.getLatitude();
+				double lng = node.getLongitude();
+				double diff = 0.0000001;
+				URLConnection connection = (new URL("http://127.0.0.1:8111/load_and_zoom?left=" + (lng - diff) + "&top=" + (lat + diff) + "&right=" + (lng + diff) + "&bottom=" + (lat - diff) + "&select=node" + currentNode)).openConnection();
+				connection.connect();
+				if (connection instanceof HttpURLConnection)
+				{
+					HttpURLConnection httpConnection = (HttpURLConnection)connection;
+					httpConnection.getResponseCode();
+				}
+				else
+				{
+					Route.LOGGER.warn("No HTTP endpoint found on JOSM!");
+				}
+				IOUtils.close(connection);
 			}
-			else
+			catch (ConnectException e)
 			{
-				Route.LOGGER.error("No HTTP endpoint found on JOSM!");
+				Route.LOGGER.warn("No HTTP endpoint found on JOSM!");
 			}
-			IOUtils.close(connection);
 			
-			if (currentNode == this.getDest().getId())
+			if (currentNode == dest.getId())
 			{
+				Route.LOGGER.debug("Path found between " + start + " and " + dest + ".");
+				
 				return true;
 			}
 			
+			Route.LOGGER.trace("Add " + node + " the the set of already proceeded nodes.");
 			this.closedList.add(currentNode);
 			this.expand(node);
 		}
 		while ( ! (this.openList.isEmpty()));
+		
+		Route.LOGGER.info("No path was found between " + start + " and " + dest + ".");
 		
 		return false;
 	}

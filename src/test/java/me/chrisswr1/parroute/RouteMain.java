@@ -36,7 +36,7 @@ public class RouteMain
 	 * main method
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param args arguments from the console
 	 */
 	public static void main(String[] args)
@@ -46,19 +46,20 @@ public class RouteMain
 			OverpassHandler handler = new OverpassHandler();
 			Route route = new Route(handler, handler.getNode(962137765), handler.getNode(42907635));
 			
+			RouteMain.LOGGER.debug("Start calculation of a route from " + route.getStart() + " to " + route.getDest() + ".");
+			
 			if (route.calc())
 			{
-				RouteMain.LOGGER.error("The following route was found: " + route);
+				RouteMain.LOGGER.info("The following route was found: " + route);
 			}
 			else
 			{
-				RouteMain.LOGGER.error("No route was found between " + route.getStart().getId() + " and " + route.getDest().getId());
+				RouteMain.LOGGER.info("No route was found between " + route.getStart().getId() + " and " + route.getDest().getId());
 			}
 		}
 		catch (IOException e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			RouteMain.LOGGER.error("Couldn't get an entity from the data handler!", e);
 		}
 	}
 }
