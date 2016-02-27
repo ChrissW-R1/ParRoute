@@ -29,21 +29,20 @@ import org.openstreetmap.osmosis.xml.v0_6.impl.OsmHandler;
 import org.xml.sax.SAXException;
 
 /**
- * defines a {@link DataHandler} to request data directly from the OpenStreetMap
- * API (version 0.6)
+ * defines a handler to request data directly from the OpenStreetMap API
+ * (version 0.6)
  * 
  * @deprecated Use {@link OverpassHandler} instead
- * 			
+ * 
  * @version 0.0.1
  * @author ChrissW-R1
  * @since 0.0.1
- * 
+ * 		
  * @see <a href="http://wiki.openstreetmap.org/wiki/API_v0.6">API v0.6 –
  *      OpenStreetMap Wiki</a>
  */
 @Deprecated
 public class OsmHandler06
-implements DataHandler
 {
 	/**
 	 * the {@link Logger} of this class
@@ -56,7 +55,7 @@ implements DataHandler
 	 * the {@link URL} of the OpenStreetMap API
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @see <a href="https://api.openstreetmap.org/api/0.6/">Official API
 	 *      URL</a>
 	 */
@@ -66,7 +65,7 @@ implements DataHandler
 	 * constructor, with given API {@link URL}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param apiUrl the {@link URL} of the OpenStreetMap API (<b>Attention</b>:
 	 *            It is not recommend to use the official OSMF server, this API
 	 *            is primarily provided for editing the data and &quot;heavy
@@ -83,7 +82,7 @@ implements DataHandler
 	 * creates a {@link HttpURLConnection} of the given API request
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param request the request for the API
 	 * @return the {@link HttpURLConnection}
 	 * @throws IOException if the connection couldn't established
@@ -118,7 +117,7 @@ implements DataHandler
 	 * parse an {@link InputStream} with OpenStreetMap data XML document
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param is the {@link InputStream} to parse
 	 * @param types list of all {@link EntityType}s, which should be parsed (use
 	 *            <code>null</code> to parse all {@link EntityType}s)
@@ -126,7 +125,7 @@ implements DataHandler
 	 *            to parse all ids)
 	 * @return a {@link Map}, which contains all parsed {@link Entity}s
 	 * @throws IOException if an error occurred while parsing the document
-	 * 			
+	 * 
 	 * @see OsmHandler06#parseStream(InputStream, EntityType, Collection)
 	 */
 	private static Map<? extends Long, ? extends Entity> parseStream(InputStream is, final Collection<? extends EntityType> types, final Collection<? extends Long> ids)
@@ -189,14 +188,14 @@ implements DataHandler
 	 * parse an {@link InputStream} and filters only one {@link EntityType}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param is the {@link InputStream} to parse
 	 * @param type the {@link EntityType} to filter
 	 * @param ids the ids to filter
 	 * @return a {@link Map} of all parsed {@link Entity}s, filtered by
 	 *         {@code type} and {@code ids}
 	 * @throws IOException if the parsing failed
-	 * 			
+	 * 
 	 * @see OsmHandler06#parseStream(InputStream, Collection, Collection)
 	 */
 	private static Map<? extends Long, ? extends Entity> parseStream(InputStream is, EntityType type, final Collection<? extends Long> ids)
@@ -212,13 +211,13 @@ implements DataHandler
 	 * requests a OpenStreetMap feature by its id
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the requested {@link Entity}
 	 * @param type the {@link EntityType} of the requested feature
 	 * @return the requested feature
 	 * @throws IOException if the requested {@link Entity} doesn't exist or if a
 	 *             connection to the API couldn't established
-	 * 			
+	 * 
 	 * @see <a href=
 	 *      "http://wiki.openstreetmap.org/wiki/API_v0.6#Read:_GET_.2Fapi.2F0.6.2F.5Bnode.7Cway.7Crelation.5D.2F.23id">
 	 *      API v0.6 – OpenStreetMap Wiki</a>
@@ -274,7 +273,7 @@ implements DataHandler
 	 * requests a list of {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param ids the ids of the requested {@link Entity}s
 	 * @param type the {@link EntityType} of the requested {@link Entity}s
 	 * @return a {@link Map} of all received {@link Entity}s
@@ -334,17 +333,16 @@ implements DataHandler
 	 * requests all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
 	 * @throws IOException if the connection couldn't established or the
 	 *             response couldn't parsed
-	 * 			
+	 * 
 	 * @see <a href=
 	 *      "http://wiki.openstreetmap.org/wiki/API_v0.6#Ways_for_node:_GET_.2Fapi.2F0.6.2Fnode.2F.23id.2Fways">
 	 *      API v0.6 – OpenStreetMap Wiki</a>
 	 */
-	@Override
 	public Map<? extends Long, ? extends Way> getWaysOfNode(Node node)
 	throws IOException
 	{
@@ -366,7 +364,7 @@ implements DataHandler
 	 * requests all {@link Relation}, which {@code entity} is a member from
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
 	 * @return a {@link Map} of all {@link Relation}s, which have {@code entity}
 	 *         as member

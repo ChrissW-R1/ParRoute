@@ -1,20 +1,18 @@
 package me.chrisswr1.parroute.algorithm;
 
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.collections4.SetValuedMap;
 import org.apache.commons.collections4.map.MultiKeyMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 
+import me.chrisswr1.parroute.util.CollectionUtils;
 import me.chrisswr1.parroute.util.MixedMultiKeyMap;
 
 /**
@@ -390,18 +388,6 @@ public class AStar
 		aStar.calc(1, 71);
 	}
 	
-	public static <K, V extends Comparable<V>> Entry<K, V> getMin(Map<K, V> map)
-	{
-		return Collections.min(map.entrySet(), new Comparator<Entry<K, V>>()
-		{
-			@Override
-			public int compare(Entry<K, V> o1, Entry<K, V> o2)
-			{
-				return o1.getValue().compareTo(o2.getValue());
-			}
-		});
-	}
-	
 	private double g(long id)
 	{
 		double res;
@@ -455,7 +441,7 @@ public class AStar
 		
 		do
 		{
-			long currentNode = AStar.getMin(this.openList).getKey();
+			long currentNode = CollectionUtils.min(this.openList).getKey();
 			this.openList.remove(currentNode);
 			
 			if (currentNode == dest)

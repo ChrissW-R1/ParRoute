@@ -9,6 +9,7 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,12 +22,8 @@ import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
 import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.geotools.referencing.CRS;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.geometry.DirectPosition;
 import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.TransformException;
 import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
@@ -43,14 +40,13 @@ import org.xml.sax.SAXException;
 import me.chrisswr1.parroute.util.GeoUtils;
 
 /**
- * defines a {@link DataHandler}, which requests data from the Overpass API
+ * defines a handler, which requests data from the Overpass API
  * 
  * @version 0.0.1
  * @author ChrissW-R1
  * @since 0.0.1
  */
 public class OverpassHandler
-implements DataHandler
 {
 	/**
 	 * the {@link URL} of the official Overpass API server
@@ -65,13 +61,6 @@ implements DataHandler
 	 * @since 0.0.1
 	 */
 	public static final Logger								LOGGER					= LogManager.getLogger(OverpassHandler.class);
-	/**
-	 * the default {@link CoordinateReferenceSystem} of the OpenStreetMap
-	 * database
-	 * 
-	 * @since 0.0.1
-	 */
-	public static final CoordinateReferenceSystem			OSM_CRS;
 	/**
 	 * placeholder for the bbox in a Overpass QL script
 	 * 
@@ -153,20 +142,9 @@ implements DataHandler
 																					
 	static
 	{
-		CoordinateReferenceSystem crs;
 		try
 		{
-			crs = CRS.decode("EPSG:4326");
-		}
-		catch (FactoryException e)
-		{
-			crs = DefaultGeographicCRS.WGS84;
-		}
-		OSM_CRS = crs;
-		
-		try
-		{
-			OverpassHandler.offUrl = new URL("https://overpass-api.de/api/");
+			OverpassHandler.offUrl = new URL("http://overpass-api.de/api/");
 		}
 		catch (MalformedURLException e)
 		{
@@ -177,7 +155,7 @@ implements DataHandler
 	 * constructor, with given API {@link URL}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param apiUrl the {@link URL} of the
 	 */
 	public OverpassHandler(URL apiUrl)
@@ -209,7 +187,7 @@ implements DataHandler
 	 * {@link OverpassHandler#rels}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param script the Overpass QL script
 	 * @param bbox the bounding box of the request
 	 * @throws IOException if an error occurred on request the data from the
@@ -225,12 +203,12 @@ implements DataHandler
 			
 			try
 			{
-				lowerCorner = GeoUtils.transform(bbox.getLowerCorner(), OverpassHandler.OSM_CRS);
-				upperCorner = GeoUtils.transform(bbox.getUpperCorner(), OverpassHandler.OSM_CRS);
+				lowerCorner = GeoUtils.transform(bbox.getLowerCorner(), GeoUtils.OSM_CRS);
+				upperCorner = GeoUtils.transform(bbox.getUpperCorner(), GeoUtils.OSM_CRS);
 			}
 			catch (TransformException e)
 			{
-				String msg = "Couldn't transform requested CRS to " + OverpassHandler.OSM_CRS.getName().getCode() + "!";
+				String msg = "Couldn't transform requested CRS to " + GeoUtils.OSM_CRS.getName().getCode() + "!";
 				OverpassHandler.LOGGER.error(msg, e);
 				throw new IOException(msg, e);
 			}
@@ -253,7 +231,10 @@ implements DataHandler
 			{
 				OverpassHandler.LOGGER.debug("Request features from the Overpass API with the following script: " + script);
 				
-				URLConnection connection = (new URL(this.apiUrl.toString() + "interpreter?data=" + URLEncoder.encode(script, "UTF-8"))).openConnection();
+				String url = this.apiUrl.toString() + "interpreter?data=" + URLEncoder.encode(script, "UTF-8");
+				OverpassHandler.LOGGER.trace("Trying to connect to: " + url);
+				
+				URLConnection connection = (new URL(url)).openConnection();
 				connection.connect();
 				
 				if (connection instanceof HttpURLConnection)
@@ -342,6 +323,8 @@ implements DataHandler
 					};
 					
 					parser.parse(is, new OsmHandler(sink, true));
+					
+					return;
 				}
 				else
 				{
@@ -370,7 +353,7 @@ implements DataHandler
 	 * gives a {@link Node} from the store, or request it from the API
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Node}
 	 * @return the {@link Node} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -393,7 +376,7 @@ implements DataHandler
 	 * gives a {@link Way} from the store, or request it from the API
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Way}
 	 * @return the {@link Way} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -416,7 +399,7 @@ implements DataHandler
 	 * gives a {@link Relation} from the store, or request it from the API
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Relation}
 	 * @return the {@link Relation} with id {@code id} or <code>null</code>, if
 	 *         it doesn't exist
@@ -435,8 +418,17 @@ implements DataHandler
 		return this.rels.get(id);
 	}
 	
-	@Override
-	public Map<? extends Long, ? extends Way> getWaysOfNode(Node node)
+	/**
+	 * requests all {@link Way}s on which {@code node} is a part from
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @param node the {@link Node} to get the {@link Way}s from
+	 * @return the {@link Way}s which contains {@code node}
+	 * @throws IOException if the connection couldn't established or the
+	 *             response couldn't parsed
+	 */
+	public Set<Way> getWaysOfNode(Node node)
 	throws IOException
 	{
 		long id = node.getId();
@@ -448,10 +440,10 @@ implements DataHandler
 			this.allWaysOfNodeStored.add(id);
 		}
 		
-		Map<Long, Way> res = new HashMap<>();
+		Set<Way> res = new HashSet<>();
 		for (long wayId : this.waysOfNode.get(id))
 		{
-			res.put(wayId, this.getWay(wayId));
+			res.add(this.getWay(wayId));
 		}
 		
 		return res;
@@ -461,14 +453,14 @@ implements DataHandler
 	 * gives all {@link Relation}s of which {@code entity} is a member
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
-	 * @return a {@link Map} of all {@link Relation}s, which have {@code entity}
+	 * @return a {@link Set} of all {@link Relation}s, which have {@code entity}
 	 *         as a member
 	 * @throws IOException if the connection couldn't established or the parsing
 	 *             failed
 	 */
-	public Map<? extends Long, ? extends Relation> getRelsOfEntity(Entity entity)
+	public Set<Relation> getRelsOfEntity(Entity entity)
 	throws IOException
 	{
 		long id = entity.getId();
@@ -482,10 +474,86 @@ implements DataHandler
 			allStoredSet.add(id);
 		}
 		
-		Map<Long, Relation> res = new HashMap<>();
+		Set<Relation> res = new HashSet<>();
 		for (long relId : this.relsOfEntity.get(type).get(id))
 		{
-			res.put(relId, this.getRel(relId));
+			res.add(this.getRel(relId));
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * gives all indices of a {@link Node} in a {@link Way}
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param node the {@link Node} to get the indices of
+	 * @param way the {@link Way} in which to search {@code node} for
+	 * @return a {@link Set} of all indices of {@code node} in {@code way}
+	 */
+	public Set<Integer> getIndices(Node node, Way way)
+	{
+		long nodeId = node.getId();
+		
+		Set<Integer> res = new HashSet<>();
+		int idx = 0;
+		for (WayNode wayNode : way.getWayNodes())
+		{
+			if (wayNode.getNodeId() == nodeId)
+			{
+				res.add(idx);
+			}
+			
+			idx++;
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * gives all direct neighbors of a {@link Node}
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param node the {@link Node} to search the neighbors for
+	 * @return a {@link Set} of all found neighbors
+	 * @throws IOException if the connection couldn't established or the parsing
+	 *             failed
+	 */
+	public Set<Node> getNeighbours(Node node)
+	throws IOException
+	{
+		Set<Node> res = new HashSet<>();
+		
+		for (Way way : this.getWaysOfNode(node))
+		{
+			for (int idx : this.getIndices(node, way))
+			{
+				List<WayNode> wayNodes = way.getWayNodes();
+				
+				int nbIdx = idx - 1;
+				if (nbIdx >= 0)
+				{
+					long leftId = wayNodes.get(nbIdx).getNodeId();
+					
+					if (leftId != node.getId())
+					{
+						res.add(this.getNode(leftId));
+					}
+				}
+				
+				nbIdx = idx + 1;
+				if (nbIdx < wayNodes.size())
+				{
+					long rightId = wayNodes.get(nbIdx).getNodeId();
+					
+					if (rightId != node.getId())
+					{
+						res.add(this.getNode(rightId));
+					}
+				}
+			}
 		}
 		
 		return res;
