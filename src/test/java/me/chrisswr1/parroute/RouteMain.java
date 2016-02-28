@@ -1,9 +1,13 @@
 package me.chrisswr1.parroute;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
+import org.openstreetmap.osmosis.xml.common.CompressionMethod;
+import org.openstreetmap.osmosis.xml.v0_6.XmlWriter;
 
 import me.chrisswr1.parroute.io.OverpassHandler;
 
@@ -41,10 +45,14 @@ public class RouteMain
 	 */
 	public static void main(String[] args)
 	{
+		long startTime = System.currentTimeMillis();
+		
 		try
 		{
 			OverpassHandler handler = new OverpassHandler();
-			Route route = new Route(handler, handler.getNode(962137765), handler.getNode(42907635));
+			long start = 962137765;
+			long dest = 42907635;
+			Route route = new Route(handler, handler.getNode(start), handler.getNode(dest));
 			
 			RouteMain.LOGGER.debug("Start calculation of a route from " + route.getStart() + " to " + route.getDest() + ".");
 			
@@ -56,10 +64,19 @@ public class RouteMain
 			{
 				RouteMain.LOGGER.info("No route was found between " + route.getStart().getId() + " and " + route.getDest().getId());
 			}
+			
+			XmlWriter xmlWriter = new XmlWriter(new File("target/" + start + "_" + dest + ".osm"), CompressionMethod.None);
+			for (EntityContainer container : handler.getContainers())
+			{
+				xmlWriter.process(container);
+			}
+			xmlWriter.complete();
 		}
 		catch (IOException e)
 		{
 			RouteMain.LOGGER.error("Couldn't get an entity from the data handler!", e);
 		}
+		
+		RouteMain.LOGGER.info("Routing calculation finished after " + ((double) (System.currentTimeMillis() - startTime) / 60000) + " minutes.");
 	}
 }

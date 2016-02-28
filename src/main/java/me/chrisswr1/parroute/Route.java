@@ -299,7 +299,7 @@ public class Route
 		do
 		{
 			long currentNode = CollectionUtils.min(this.openList).getKey();
-			Route.LOGGER.debug("Processing node with id " + currentNode + ".");
+			Route.LOGGER.debug("Processing node with id " + currentNode + ". Step: " + (this.closedList.size() + 1));
 			Route.LOGGER.trace("Remove " + currentNode + " from open list.");
 			this.openList.remove(currentNode);
 			
@@ -329,7 +329,7 @@ public class Route
 			
 			if (currentNode == dest.getId())
 			{
-				Route.LOGGER.debug("Path found between " + start + " and " + dest + ".");
+				Route.LOGGER.info("Path found between " + start + " and " + dest + ".");
 				
 				return true;
 			}

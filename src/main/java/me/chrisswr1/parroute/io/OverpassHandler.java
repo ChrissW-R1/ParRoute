@@ -9,6 +9,7 @@ import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,6 +27,9 @@ import org.opengis.geometry.DirectPosition;
 import org.opengis.geometry.Envelope;
 import org.opengis.referencing.operation.TransformException;
 import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
+import org.openstreetmap.osmosis.core.container.v0_6.NodeContainer;
+import org.openstreetmap.osmosis.core.container.v0_6.RelationContainer;
+import org.openstreetmap.osmosis.core.container.v0_6.WayContainer;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.EntityType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
@@ -37,6 +41,7 @@ import org.openstreetmap.osmosis.core.task.v0_6.Sink;
 import org.openstreetmap.osmosis.xml.v0_6.impl.OsmHandler;
 import org.xml.sax.SAXException;
 
+import me.chrisswr1.parroute.entities.Oneway;
 import me.chrisswr1.parroute.util.GeoUtils;
 
 /**
@@ -200,7 +205,7 @@ public class OverpassHandler
 	{
 		if (bbox != null)
 		{
-			OverpassHandler.LOGGER.debug("Bounding box was given: " + bbox);
+			OverpassHandler.LOGGER.trace("Bounding box was given: " + bbox);
 			
 			DirectPosition lowerCorner;
 			DirectPosition upperCorner;
@@ -221,7 +226,7 @@ public class OverpassHandler
 			
 			script = script.replace(OverpassHandler.PH_BBOX, bboxString);
 			
-			OverpassHandler.LOGGER.debug("Replaced all " + OverpassHandler.PH_BBOX + " with real bounding box: " + bboxString);
+			OverpassHandler.LOGGER.trace("Replaced all " + OverpassHandler.PH_BBOX + " with real bounding box: " + bboxString);
 		}
 		else
 		{
@@ -237,7 +242,7 @@ public class OverpassHandler
 		{
 			for (int i = 0; i < OverpassHandler.ATTEMPTS; i++)
 			{
-				OverpassHandler.LOGGER.debug("Request features by the following script (attempt " + i + "): " + script);
+				OverpassHandler.LOGGER.debug("Request features by the following script (attempt " + (i + 1) + "): " + script);
 				
 				String url = this.apiUrl.toString() + "interpreter?data=" + URLEncoder.encode(script, "UTF-8");
 				OverpassHandler.LOGGER.trace("Trying to connect to: " + url);
@@ -302,13 +307,13 @@ public class OverpassHandler
 							Entity entity = entityContainer.getEntity();
 							long id = entity.getId();
 							
-							OverpassHandler.LOGGER.debug("Parsing " + entity);
+							OverpassHandler.LOGGER.trace("Parsing " + entity);
 							
 							if (entity instanceof Node)
 							{
 								Node node = (Node)entity;
 								
-								OverpassHandler.LOGGER.debug("Found node with id " + id);
+								OverpassHandler.LOGGER.trace("Found node with id " + id);
 								
 								OverpassHandler.this.nodes.put(id, node);
 							}
@@ -316,7 +321,7 @@ public class OverpassHandler
 							{
 								Way way = (Way)entity;
 								
-								OverpassHandler.LOGGER.debug("Found way with id " + id);
+								OverpassHandler.LOGGER.trace("Found way with id " + id);
 								
 								OverpassHandler.this.ways.put(id, way);
 								
@@ -332,7 +337,7 @@ public class OverpassHandler
 							{
 								Relation rel = (Relation)entity;
 								
-								OverpassHandler.LOGGER.debug("Found relation with id " + id);
+								OverpassHandler.LOGGER.trace("Found relation with id " + id);
 								
 								OverpassHandler.this.rels.put(id, rel);
 								
@@ -348,12 +353,17 @@ public class OverpassHandler
 						}
 					};
 					
+					OverpassHandler.LOGGER.trace("Start XML parsing of Overpass API response from " + url);
 					parser.parse(is, new OsmHandler(sink, true));
+					
+					OverpassHandler.LOGGER.trace("Close conntection to " + url + ".");
+					IOUtils.close(httpConnection);
 					
 					return;
 				}
 				else
 				{
+					OverpassHandler.LOGGER.trace("Close conntection to " + url + ".");
 					IOUtils.close(connection);
 					
 					String msg = "The URL didn't point to a connection using HTTP!";
@@ -394,7 +404,7 @@ public class OverpassHandler
 	public Node getNode(long id)
 	throws IOException
 	{
-		OverpassHandler.LOGGER.debug("Get node with id " + id + ".");
+		OverpassHandler.LOGGER.trace("Get node with id " + id + ".");
 		
 		if ( ! (this.nodes.containsKey(id)))
 		{
@@ -421,7 +431,7 @@ public class OverpassHandler
 	public Way getWay(long id)
 	throws IOException
 	{
-		OverpassHandler.LOGGER.debug("Get way with id " + id + ".");
+		OverpassHandler.LOGGER.trace("Get way with id " + id + ".");
 		
 		if ( ! (this.ways.containsKey(id)))
 		{
@@ -448,7 +458,7 @@ public class OverpassHandler
 	public Relation getRel(long id)
 	throws IOException
 	{
-		OverpassHandler.LOGGER.debug("Get relation with id " + id + ".");
+		OverpassHandler.LOGGER.trace("Get relation with id " + id + ".");
 		
 		if ( ! (this.rels.containsKey(id)))
 		{
@@ -474,13 +484,13 @@ public class OverpassHandler
 	public Set<Way> getWaysOfNode(Node node)
 	throws IOException
 	{
-		OverpassHandler.LOGGER.debug("Get all ways, on which " + node + " is a part from.");
+		OverpassHandler.LOGGER.trace("Get all ways, on which " + node + " is a part from.");
 		
 		long id = node.getId();
 		
 		if ( ! (this.allWaysOfNodeStored.contains(id)))
 		{
-			OverpassHandler.LOGGER.debug("Not sure, if all ways of node " + node + " were stored. Requesting them.");
+			OverpassHandler.LOGGER.debug("Not sure, if all ways of " + node + " were stored. Requesting them.");
 			
 			String script = "node(" + id + ");<;";
 			this.requestEntities(script, null);
@@ -510,7 +520,7 @@ public class OverpassHandler
 	public Set<Relation> getRelsOfEntity(Entity entity)
 	throws IOException
 	{
-		OverpassHandler.LOGGER.debug("Get all relations, which have " + entity + " as a member.");
+		OverpassHandler.LOGGER.trace("Get all relations, which have " + entity + " as a member.");
 		
 		long id = entity.getId();
 		EntityType type = entity.getType();
@@ -518,7 +528,7 @@ public class OverpassHandler
 		Set<Long> allStoredSet = this.allRelsOfEntityStored.get(type);
 		if ( ! (allStoredSet.contains(id)))
 		{
-			OverpassHandler.LOGGER.debug("Not sure, if all ways of node " + entity + " were stored. Requesting them.");
+			OverpassHandler.LOGGER.debug("Not sure, if all relations of " + entity + " were stored. Requesting them.");
 			
 			String script = type.toString().toLowerCase() + "(" + id + ");<;";
 			this.requestEntities(script, null);
@@ -545,7 +555,7 @@ public class OverpassHandler
 	 */
 	public Set<Integer> getIndices(Node node, Way way)
 	{
-		OverpassHandler.LOGGER.debug("Get all indices of " + node + " in " + way + ".");
+		OverpassHandler.LOGGER.trace("Get all indices of " + node + " in " + way + ".");
 		
 		long nodeId = node.getId();
 		
@@ -565,60 +575,143 @@ public class OverpassHandler
 	}
 	
 	/**
+	 * gives all direct neighbors of a {@link Node} in a specific {@link Way}
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @param node the {@link Node} to get the neighbors from
+	 * @param way the {@link Way} to search in
+	 * @return a {@link Set} of all neighbors of {@code node} in {@code way}
+	 * @throws IOException if the necessary data couldn't get
+	 */
+	public Set<Node> getNeighbors(Node node, Way way)
+	throws IOException
+	{
+		OverpassHandler.LOGGER.trace("Get all direct neighbors of " + node + " in " + way + ".");
+		
+		Set<Node> res = new HashSet<>();
+		Oneway oneway = Oneway.get(way);
+		
+		for (int idx : this.getIndices(node, way))
+		{
+			List<WayNode> wayNodes = way.getWayNodes();
+			
+			if (oneway != Oneway.INDICATED)
+			{
+				int leftIdx = idx - 1;
+				if (leftIdx >= 0)
+				{
+					long leftId = wayNodes.get(leftIdx).getNodeId();
+					
+					if (leftId != node.getId())
+					{
+						Node leftNode = this.getNode(leftId);
+						
+						OverpassHandler.LOGGER.trace("Found " + leftNode + " as a neighbor before " + node + " in " + way + ".");
+						
+						res.add(leftNode);
+					}
+				}
+			}
+			
+			if (oneway != Oneway.OPPOSITE)
+			{
+				int rightIdx = idx + 1;
+				if (rightIdx < wayNodes.size())
+				{
+					long rightId = wayNodes.get(rightIdx).getNodeId();
+					
+					if (rightId != node.getId())
+					{
+						Node rightNode = this.getNode(rightId);
+						
+						OverpassHandler.LOGGER.trace("Found " + rightNode + " as a neighbor after " + node + " in " + way + ".");
+						
+						res.add(rightNode);
+					}
+				}
+			}
+		}
+		
+		return res;
+	}
+	
+	/**
 	 * gives all direct neighbors of a {@link Node}
 	 * 
 	 * @since 0.0.1
 	 * 
 	 * @param node the {@link Node} to search the neighbors for
 	 * @return a {@link Set} of all found neighbors
-	 * @throws IOException if the connection couldn't established or the parsing
-	 *             failed
+	 * @throws IOException if the necessary data couldn't get
 	 */
 	public Set<Node> getNeighbours(Node node)
 	throws IOException
 	{
-		OverpassHandler.LOGGER.debug("Get all direct neighbors of " + node + ".");
+		OverpassHandler.LOGGER.trace("Get all direct neighbors of " + node + " in all ways.");
 		
 		Set<Node> res = new HashSet<>();
 		
 		for (Way way : this.getWaysOfNode(node))
 		{
-			OverpassHandler.LOGGER.debug("Get neighbors of " + node + " in " + way + ".");
-			
-			for (int idx : this.getIndices(node, way))
+			res.addAll(this.getNeighbors(node, way));
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * gives all {@link Way}s, which are a direct connection from {@code from}
+	 * to {@code to}
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @param from the start {@link Node} of the connection
+	 * @param to the destination {@link Node} of the connection
+	 * @return a {@link Set}, which contains all direct connections
+	 * @throws IOException if the necessary data couldn't get
+	 */
+	public Set<Way> getConnectionWays(Node from, Node to)
+	throws IOException
+	{
+		Set<Way> ways = new HashSet<>(this.getWaysOfNode(from));
+		ways.retainAll(this.getWaysOfNode(to));
+		
+		Set<Way> res = new HashSet<>();
+		for (Way way : ways)
+		{
+			if (this.getNeighbors(from, way).contains(to))
 			{
-				List<WayNode> wayNodes = way.getWayNodes();
-				
-				int nbIdx = idx - 1;
-				if (nbIdx >= 0)
-				{
-					long leftId = wayNodes.get(nbIdx).getNodeId();
-					
-					if (leftId != node.getId())
-					{
-						Node leftNode = this.getNode(leftId);
-						
-						OverpassHandler.LOGGER.debug("Found " + leftNode + " as a neighbor before " + node + " in " + way + ".");
-						
-						res.add(leftNode);
-					}
-				}
-				
-				nbIdx = idx + 1;
-				if (nbIdx < wayNodes.size())
-				{
-					long rightId = wayNodes.get(nbIdx).getNodeId();
-					
-					if (rightId != node.getId())
-					{
-						Node rightNode = this.getNode(rightId);
-						
-						OverpassHandler.LOGGER.debug("Found " + rightNode + " as a neighbor after " + node + " in " + way + ".");
-						
-						res.add(rightNode);
-					}
-				}
+				res.add(way);
 			}
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * gives a {@link Set} of all stored {@link Entity}s
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @return a {@link Set} of all stored {@link Entity}s bundled to
+	 *         {@link EntityContainer}s
+	 */
+	public Set<EntityContainer> getContainers()
+	{
+		Set<EntityContainer> res = new LinkedHashSet<>();
+		
+		for (Node node : this.nodes.values())
+		{
+			res.add(new NodeContainer(node));
+		}
+		for (Way way : this.ways.values())
+		{
+			res.add(new WayContainer(way));
+		}
+		for (Relation rel : this.rels.values())
+		{
+			res.add(new RelationContainer(rel));
 		}
 		
 		return res;
