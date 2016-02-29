@@ -21,7 +21,7 @@ public interface DataReceiver
 	 * requests a {@link Node}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Node}
 	 * @return the {@link Node} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -35,7 +35,7 @@ public interface DataReceiver
 	 * requests a {@link Way}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Way}
 	 * @return the {@link Way} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -49,7 +49,7 @@ public interface DataReceiver
 	 * requests a {@link Relation}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Relation}
 	 * @return the {@link Relation} with id {@code id} or <code>null</code>, if
 	 *         it doesn't exist
@@ -63,26 +63,26 @@ public interface DataReceiver
 	 * requests all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
 	 * @throws IOException if the connection couldn't established or the
 	 *             response couldn't parsed
 	 */
-	public Set<Way> getWaysOfNode(Node node)
+	public Set<Way> getWaysOf(Node node)
 	throws IOException;
 	
 	/**
 	 * gives all {@link Relation}s of which {@code entity} is a member
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
 	 * @return a {@link Set} of all {@link Relation}s, which have {@code entity}
 	 *         as a member
 	 * @throws IOException if the connection couldn't established or the parsing
 	 *             failed
 	 */
-	public Set<Relation> getRelsOfEntity(Entity entity)
+	public Set<Relation> getRelsOf(Entity entity)
 	throws IOException;
 }

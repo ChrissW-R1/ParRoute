@@ -4,10 +4,20 @@
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n" />
 		</Console>
+		<RollingFile name="TraceFile" fileName="target/logs/trace/current.log"
+			filePattern="target/logs/trace/%i.log">
+			<PatternLayout>
+				<pattern>%d %p %c{1.} [%t] %m%n</pattern>
+			</PatternLayout>
+			<SizeBasedTriggeringPolicy size="100MB" />
+		</RollingFile>
 	</Appenders>
 	<Loggers>
 		<Root level="INFO">
 			<AppenderRef ref="Console" />
+		</Root>
+		<Root level="TRACE">
+			<AppenderRef ref="TraceFile"></AppenderRef>
 		</Root>
 	</Loggers>
 </Configuration>

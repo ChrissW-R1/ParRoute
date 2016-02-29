@@ -34,6 +34,7 @@
 		<osmosis.version>0.44.1</osmosis.version>
 		<junit.version>4.12</junit.version>
 		<mockito.version>1.10.19</mockito.version>
+		<plugin.jaxb.version>0.12.1</plugin.jaxb.version>
 		<plugin.license.version>1.8</plugin.license.version>
 		<plugin.findbugs.version>3.0.3</plugin.findbugs.version>
 		<plugin.compiler.version>3.5.1</plugin.compiler.version>
@@ -100,6 +101,27 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.jvnet.jaxb2.maven2</groupId>
+					<artifactId>maven-jaxb2-plugin</artifactId>
+					<version>${plugin.jaxb.version}</version>
+					<executions>
+						<execution>
+							<id>generate-gpx</id>
+							<goals>
+								<goal>generate</goal>
+							</goals>
+							<configuration>
+								<schemas>
+									<schema>
+										<url>http://www.topografix.com/GPX/1/1/gpx.xsd</url>
+									</schema>
+								</schemas>
+								<generatePackage>com.topografix.gpx</generatePackage>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>license-maven-plugin</artifactId>
@@ -180,6 +202,10 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.jvnet.jaxb2.maven2</groupId>
+				<artifactId>maven-jaxb2-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>license-maven-plugin</artifactId>

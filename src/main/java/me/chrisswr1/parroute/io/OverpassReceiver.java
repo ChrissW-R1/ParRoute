@@ -115,7 +115,7 @@ implements DataReceiver
 	 * constructor, with given {@link DataHandler} and API {@link URL}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param apiUrl the {@link URL} of the
 	 */
 	public OverpassReceiver(URL apiUrl)
@@ -138,7 +138,7 @@ implements DataReceiver
 	 * {@link OverpassReceiver#store}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param script the Overpass QL script
 	 * @param bbox the bounding box of the request
 	 * @return a {@link Set} of all received {@link Entity}s
@@ -351,7 +351,7 @@ implements DataReceiver
 	}
 	
 	@Override
-	public Set<Way> getWaysOfNode(Node node)
+	public Set<Way> getWaysOf(Node node)
 	throws IOException
 	{
 		OverpassReceiver.LOGGER.trace("Request all ways, on which " + node + " is a part from.");
@@ -380,7 +380,7 @@ implements DataReceiver
 	}
 	
 	@Override
-	public Set<Relation> getRelsOfEntity(Entity entity)
+	public Set<Relation> getRelsOf(Entity entity)
 	throws IOException
 	{
 		OverpassReceiver.LOGGER.trace("Request all relations, which have " + entity + " as a member.");
@@ -412,7 +412,7 @@ implements DataReceiver
 	 * gives the {@link DataHandler}, in which all {@link Entity}s were stored
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the {@link DataHandler}, which is used for saving the received
 	 *         OSM features
 	 */
@@ -425,7 +425,7 @@ implements DataReceiver
 	 * sets the {@link DataHandler} to store all received {@link Entity}s in
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param store the {@link DataHandler} to store the OSM features in
 	 */
 	public void setStore(DataHandler store)

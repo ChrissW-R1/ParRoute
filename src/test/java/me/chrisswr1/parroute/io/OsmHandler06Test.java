@@ -40,7 +40,7 @@ public class OsmHandler06Test
 	 * initialize the test object
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @throws MalformedURLException if the test object couldn't initialized
 	 */
 	@SuppressWarnings("deprecation")
@@ -90,8 +90,7 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmReceiver#getEntities(Collection, EntityType)}
-	 * .
+	 * Test method for {@link OsmReceiver#getEntities(Collection, EntityType)} .
 	 */
 	@Test
 	public void testRequestEntities()
@@ -124,10 +123,10 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmReceiver#getWaysOfNode(Node)}.
+	 * Test method for {@link OsmReceiver#getWaysOf(Node)}.
 	 */
 	@Test
-	public void testRequestWaysOfNode()
+	public void testRequestWaysOf()
 	{
 		long nodeId = 42907315;
 		Node node = Mockito.mock(Node.class);
@@ -144,7 +143,7 @@ public class OsmHandler06Test
 		try
 		{
 			@SuppressWarnings("deprecation")
-			Set<Way> ways = this.receiver.getWaysOfNode(node);
+			Set<Way> ways = this.receiver.getWaysOf(node);
 			Assert.assertTrue(ways.size() >= 2);
 			
 			Set<Long> idSet = new HashSet<>();
@@ -162,10 +161,10 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmReceiver#getRelsOfEntity(Entity)}.
+	 * Test method for {@link OsmReceiver#getRelsOf(Entity)}.
 	 */
 	@Test
-	public void testRequestRelationsOfEntity()
+	public void testRequestRelationsOf()
 	{
 		long wayId = 16307424;
 		Way way = Mockito.mock(Way.class);
@@ -199,7 +198,7 @@ public class OsmHandler06Test
 		try
 		{
 			@SuppressWarnings("deprecation")
-			Set<Relation> rels = this.receiver.getRelsOfEntity(way);
+			Set<Relation> rels = this.receiver.getRelsOf(way);
 			
 			Set<Long> idSet = new HashSet<>();
 			for (Relation rel : rels)

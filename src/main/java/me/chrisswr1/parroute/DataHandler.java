@@ -22,11 +22,15 @@ import org.openstreetmap.osmosis.core.domain.v0_6.EntityType;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
 import org.openstreetmap.osmosis.core.domain.v0_6.Relation;
 import org.openstreetmap.osmosis.core.domain.v0_6.RelationMember;
+import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 import org.openstreetmap.osmosis.core.domain.v0_6.WayNode;
 
 import me.chrisswr1.parroute.entities.Oneway;
+import me.chrisswr1.parroute.entities.RelationType;
+import me.chrisswr1.parroute.entities.RestrictionRelation;
 import me.chrisswr1.parroute.io.DataReceiver;
+import me.chrisswr1.parroute.util.StringUtils;
 
 /**
  * stores all received OpenStreetMap features and provides additional methods
@@ -118,6 +122,86 @@ public class DataHandler
 	}
 	
 	/**
+	 * gives the value of a {@link Tag}, defined by its key, in an
+	 * {@link Entity}<br>
+	 * Looks first of exact match, than of keys with the same lower case then
+	 * {@code key} and at least it ignores the case of the keys
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param entity the {@link Entity} to search in
+	 * @param key the {@link Tag} key to look for
+	 * @return the value of {@link Tag} with {@code key} in {@code entity}
+	 */
+	public static String getTagValue(Entity entity, String key)
+	{
+		String res = null;
+		
+		for (Tag tag : entity.getTags())
+		{
+			String tagKey = tag.getKey();
+			
+			if (tagKey.equals(key))
+			{
+				return tag.getValue();
+			}
+			
+			if (tagKey.equals(key.toLowerCase()))
+			{
+				res = tag.getValue();
+				continue;
+			}
+			
+			if (res == null && StringUtils.containsIgnoreCase(tagKey, key))
+			{
+				res = tag.getValue();
+			}
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * gives the {@link RelationType} of a specific {@link Relation}
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param rel the {@link Relation} to get the {@link RelationType} from
+	 * @return the {@link RelationType} of {@code rel}
+	 */
+	public static RelationType getRelType(Relation rel)
+	{
+		RelationType res = RelationType.UNKNOWN;
+		
+		try
+		{
+			res = RelationType.valueOf(DataHandler.getTagValue(rel, "type").toUpperCase());
+		}
+		catch (IllegalArgumentException e)
+		{
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * checks if the specific {@link Node} is at the end of a {@link Way}
+	 * 
+	 * @since 0.0.1
+	 * 		
+	 * @param node the {@link Node} to check for end
+	 * @param way the {@link Way} to look in
+	 * @return <code>true</code> if {@code node} is on an end of {@code way}
+	 */
+	public static boolean isOnEnd(Node node, Way way)
+	{
+		List<WayNode> wayNodes = way.getWayNodes();
+		long nodeId = node.getId();
+		
+		return (wayNodes.get(0).getNodeId() == nodeId) || (wayNodes.get(wayNodes.size() - 1).getNodeId() == nodeId);
+	}
+	
+	/**
 	 * gives the {@link DataReceiver}
 	 * 
 	 * @since 0.0.1
@@ -147,14 +231,14 @@ public class DataHandler
 		{
 			long id = entity.getId();
 			
-			DataHandler.LOGGER.trace("Staving " + entity + ".");
+			DataHandler.LOGGER.trace("Saving " + entity + ".");
 			
 			if (entity instanceof Node)
 			{
 				DataHandler.LOGGER.trace("Found node with id " + id + ".");
 				Node node = (Node)entity;
 				
-				DataHandler.LOGGER.trace("Save " + node + " itself.");
+				DataHandler.LOGGER.trace("Saving " + node + " itself.");
 				return this.nodes.put(id, node);
 			}
 			if (entity instanceof Way)
@@ -170,7 +254,7 @@ public class DataHandler
 					this.waysOfNode.put(nodeId, id);
 				}
 				
-				DataHandler.LOGGER.trace("Save " + way + " itself.");
+				DataHandler.LOGGER.trace("Saving " + way + " itself.");
 				return this.ways.put(id, way);
 			}
 			if (entity instanceof Relation)
@@ -187,7 +271,7 @@ public class DataHandler
 					this.relsOfEntity.get(memberType).put(memberId, id);
 				}
 				
-				DataHandler.LOGGER.trace("Save " + rel + " itself.");
+				DataHandler.LOGGER.trace("Saving " + rel + " itself.");
 				return this.rels.put(id, rel);
 			}
 		}
@@ -221,17 +305,22 @@ public class DataHandler
 	 * @param id the id of the {@link Node}
 	 * @return the {@link Node} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
-	 * @throws IOException if the requested {@link Relation}s couldn't received
 	 */
 	public Node getNode(long id)
-	throws IOException
 	{
 		DataHandler.LOGGER.trace("Get node with id " + id + ".");
 		
-		if ( ! (this.nodes.containsKey(id)))
+		try
 		{
-			DataHandler.LOGGER.debug("Node with id " + id + " is currently not stored. Requesting it.");
-			this.store(this.getReceiver().getNode(id));
+			if ( ! (this.nodes.containsKey(id)))
+			{
+				DataHandler.LOGGER.debug("Node with id " + id + " is currently not stored. Requesting it.");
+				this.store(this.getReceiver().getNode(id));
+			}
+		}
+		catch (IOException e)
+		{
+			DataHandler.LOGGER.error("Couldn't receive node " + id + " from " + this.getReceiver() + "!", e);
 		}
 		
 		return this.nodes.get(id);
@@ -245,17 +334,22 @@ public class DataHandler
 	 * @param id the id of the {@link Way}
 	 * @return the {@link Way} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
-	 * @throws IOException if the requested {@link Relation}s couldn't received
 	 */
 	public Way getWay(long id)
-	throws IOException
 	{
 		DataHandler.LOGGER.trace("Get way with id " + id + ".");
 		
-		if ( ! (this.ways.containsKey(id)))
+		try
 		{
-			DataHandler.LOGGER.debug("Way with id " + id + " is currently not stored. Requesting it.");
-			this.store(this.getReceiver().getWay(id));
+			if ( ! (this.ways.containsKey(id)))
+			{
+				DataHandler.LOGGER.debug("Way with id " + id + " is currently not stored. Requesting it.");
+				this.store(this.getReceiver().getWay(id));
+			}
+		}
+		catch (IOException e)
+		{
+			DataHandler.LOGGER.error("Couldn't receive way " + id + " from " + this.getReceiver() + "!", e);
 		}
 		
 		return this.ways.get(id);
@@ -269,45 +363,55 @@ public class DataHandler
 	 * @param id the id of the {@link Relation}
 	 * @return the {@link Relation} with id {@code id} or <code>null</code>, if
 	 *         it doesn't exist
-	 * @throws IOException if the requested {@link Relation}s couldn't received
 	 */
 	public Relation getRel(long id)
-	throws IOException
 	{
 		DataHandler.LOGGER.trace("Get relation with id " + id + ".");
 		
-		if ( ! (this.rels.containsKey(id)))
+		try
 		{
-			DataHandler.LOGGER.debug("Relation with id " + id + " is currently not stored. Requesting it.");
-			this.store(this.getReceiver().getRel(id));
+			if ( ! (this.rels.containsKey(id)))
+			{
+				DataHandler.LOGGER.debug("Relation with id " + id + " is currently not stored. Requesting it.");
+				this.store(this.getReceiver().getRel(id));
+			}
+		}
+		catch (IOException e)
+		{
+			DataHandler.LOGGER.error("Couldn't receive relation " + id + " from " + this.getReceiver() + "!", e);
 		}
 		
 		return this.rels.get(id);
 	}
 	
 	/**
-	 * requests all {@link Way}s on which {@code node} is a part from
+	 * gives all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
 	 * 
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
-	 * @throws IOException if the requested {@link Relation}s couldn't received
 	 */
-	public Set<Way> getWaysOfNode(Node node)
-	throws IOException
+	public Set<Way> getWaysOf(Node node)
 	{
 		DataHandler.LOGGER.trace("Get all ways, on which " + node + " is a part from.");
 		
 		long id = node.getId();
 		
-		if ( ! (this.allWaysOfNodeStored.contains(id)))
+		try
 		{
-			DataHandler.LOGGER.debug("Not sure, if all ways of " + node + " were stored. Requesting them.");
-			this.store(this.getReceiver().getWaysOfNode(node));
-			
-			DataHandler.LOGGER.trace("Mark all ways of " + node + " as already stored.");
-			this.allWaysOfNodeStored.add(id);
+			if ( ! (this.allWaysOfNodeStored.contains(id)))
+			{
+				DataHandler.LOGGER.debug("Not sure, if all ways of " + node + " were stored. Requesting them.");
+				this.store(this.getReceiver().getWaysOf(node));
+				
+				DataHandler.LOGGER.trace("Mark all ways of " + node + " as already stored.");
+				this.allWaysOfNodeStored.add(id);
+			}
+		}
+		catch (IOException e)
+		{
+			DataHandler.LOGGER.error("Couldn't receive ways of " + node + " from " + this.getReceiver() + "!", e);
 		}
 		
 		Set<Way> res = new HashSet<>();
@@ -327,24 +431,29 @@ public class DataHandler
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
 	 * @return a {@link Set} of all {@link Relation}s, which have {@code entity}
 	 *         as a member
-	 * @throws IOException if the requested {@link Relation}s couldn't received
 	 */
-	public Set<Relation> getRelsOfEntity(Entity entity)
-	throws IOException
+	public Set<Relation> getRelsOf(Entity entity)
 	{
 		DataHandler.LOGGER.trace("Get all relations, which have " + entity + " as a member.");
 		
 		long id = entity.getId();
 		EntityType type = entity.getType();
 		
-		Set<Long> allStoredSet = this.allRelsOfEntityStored.get(type);
-		if ( ! (allStoredSet.contains(id)))
+		try
 		{
-			DataHandler.LOGGER.debug("Not sure, if all relations of " + entity + " were stored. Requesting them.");
-			this.store(this.getReceiver().getRelsOfEntity(entity));
-			
-			DataHandler.LOGGER.trace("Mark all relations of " + entity + " as already stored.");
-			allStoredSet.add(id);
+			Set<Long> allStoredSet = this.allRelsOfEntityStored.get(type);
+			if ( ! (allStoredSet.contains(id)))
+			{
+				DataHandler.LOGGER.debug("Not sure, if all relations of " + entity + " were stored. Requesting them.");
+				this.store(this.getReceiver().getRelsOf(entity));
+				
+				DataHandler.LOGGER.trace("Mark all relations of " + entity + " as already stored.");
+				allStoredSet.add(id);
+			}
+		}
+		catch (IOException e)
+		{
+			DataHandler.LOGGER.error("Couldn't receive relations of " + entity + " from " + this.getReceiver() + "!", e);
 		}
 		
 		Set<Relation> res = new HashSet<>();
@@ -394,10 +503,8 @@ public class DataHandler
 	 * @param node the {@link Node} to get the neighbors from
 	 * @param way the {@link Way} to search in
 	 * @return a {@link Set} of all neighbors of {@code node} in {@code way}
-	 * @throws IOException if the necessary data couldn't get
 	 */
 	public Set<Node> getNeighbors(Node node, Way way)
-	throws IOException
 	{
 		DataHandler.LOGGER.trace("Get all direct neighbors of " + node + " in " + way + ".");
 		
@@ -449,24 +556,86 @@ public class DataHandler
 	}
 	
 	/**
-	 * gives all direct neighbors of a {@link Node}
+	 * gives all {@link Node}s, which could reached directly from a specific
+	 * {@link Node}
 	 * 
 	 * @since 0.0.1
 	 * 
-	 * @param node the {@link Node} to search the neighbors for
+	 * @param via the {@link Node} to search the neighbors for
+	 * @param from the {@link Node}, from which the path come to {@code node}
 	 * @return a {@link Set} of all found neighbors
-	 * @throws IOException if the necessary data couldn't get
 	 */
-	public Set<Node> getNeighbours(Node node)
-	throws IOException
+	public Set<Node> getNeighbors(Node via, Node from)
 	{
-		DataHandler.LOGGER.trace("Get all direct neighbors of " + node + " in all ways.");
+		DataHandler.LOGGER.trace("Get all direct neighbors of " + via + " in all ways.");
+		
+		boolean dirBased = from != null;
+		Set<RestrictionRelation> commandmentRels = null;
+		Set<RestrictionRelation> prohibitionRels = null;
+		
+		if (dirBased)
+		{
+			commandmentRels = new HashSet<>();
+			prohibitionRels = new HashSet<>();
+			
+			Set<Long> connections = new HashSet<>();
+			for (Way way : this.getConnectionWays(from, via))
+			{
+				connections.add(way.getId());
+			}
+			
+			for (Relation rel : this.getRelsOf(via))
+			{
+				try
+				{
+					RestrictionRelation restrictRel = new RestrictionRelation(rel);
+					
+					if (connections.contains(restrictRel.getFrom().getMemberId()))
+					{
+						if (restrictRel.isCommandment())
+						{
+							commandmentRels.add(restrictRel);
+						}
+						else
+						{
+							prohibitionRels.add(restrictRel);
+						}
+					}
+				}
+				catch (IllegalArgumentException e)
+				{
+					DataHandler.LOGGER.trace(rel + " is no restriction relation. Ignoring it.");
+				}
+			}
+			
+			dirBased = ! (commandmentRels.isEmpty() || prohibitionRels.isEmpty());
+		}
 		
 		Set<Node> res = new HashSet<>();
-		
-		for (Way way : this.getWaysOfNode(node))
+		ways: for (Way way : this.getWaysOf(via))
 		{
-			res.addAll(this.getNeighbors(node, way));
+			if (dirBased)
+			{
+				long wayId = way.getId();
+				
+				for (RestrictionRelation restrictRel : commandmentRels)
+				{
+					if (wayId != restrictRel.getTo().getMemberId())
+					{
+						continue ways;
+					}
+				}
+				
+				for (RestrictionRelation restrictRel : prohibitionRels)
+				{
+					if (wayId == restrictRel.getTo().getMemberId())
+					{
+						continue ways;
+					}
+				}
+			}
+			
+			res.addAll(this.getNeighbors(via, way));
 		}
 		
 		return res;
@@ -481,13 +650,11 @@ public class DataHandler
 	 * @param from the start {@link Node} of the connection
 	 * @param to the destination {@link Node} of the connection
 	 * @return a {@link Set}, which contains all direct connections
-	 * @throws IOException if the necessary data couldn't get
 	 */
 	public Set<Way> getConnectionWays(Node from, Node to)
-	throws IOException
 	{
-		Set<Way> ways = new HashSet<>(this.getWaysOfNode(from));
-		ways.retainAll(this.getWaysOfNode(to));
+		Set<Way> ways = new HashSet<>(this.getWaysOf(from));
+		ways.retainAll(this.getWaysOf(to));
 		
 		Set<Way> res = new HashSet<>();
 		for (Way way : ways)

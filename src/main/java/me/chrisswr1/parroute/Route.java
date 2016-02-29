@@ -57,11 +57,17 @@ public class Route
 	 */
 	private final Node			dest;
 	/**
+	 * stores the calculated path or null, if no path is known until yet
+	 * 
+	 * @since 0.0.1
+	 */
+	private Set<Node>			path		= null;
+	/**
 	 * if a calculation was ever called
 	 * 
 	 * @since 0.0.1
 	 */
-	private boolean				notCalc		= true;
+	private boolean				calc		= false;
 											
 	/**
 	 * stores the predecessor of already proceeded {@link Node}s
@@ -108,42 +114,28 @@ public class Route
 	@Override
 	public String toString()
 	{
-		long destId = this.getDest().getId();
-		String res = this.getStart().getId() + " --> " + destId + ": ";
+		Node dest = this.getDest();
+		String res = "Route " + this.getStart() + " --> " + dest + ":\r\n";
 		
-		if (this.notCalc)
+		if ( ! (this.isCalc()))
 		{
 			return res + "Not calculated until yet!";
 		}
 		
-		LinkedHashSet<Long> path = new LinkedHashSet<>();
-		long preId = this.predecessor.get(this.getDest().getId());
-		while (true)
-		{
-			path.add(preId);
-			
-			try
-			{
-				preId = this.predecessor.get(preId);
-			}
-			catch (NullPointerException e)
-			{
-				break;
-			}
-		}
+		Set<Node> path = this.getPath();
 		
 		if (path.isEmpty())
 		{
 			return res + "Couldn't found any route!";
 		}
 		
-		Iterator<Long> iter = (new LinkedList<>(path)).descendingIterator();
-		while (iter.hasNext())
+		res += "[\r\n";
+		for (Node node : path)
 		{
-			res += iter.next() + ", ";
+			res += "\t" + node + "\r\n";
 		}
 		
-		return res + destId;
+		return res + "\t" + dest + "\r\n]";
 	}
 	
 	/**
@@ -197,6 +189,71 @@ public class Route
 	}
 	
 	/**
+	 * is the route already calculated
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @return <code>true</code>, if the calculation was already started,
+	 *         <code>false</code> otherwise
+	 */
+	public boolean isCalc()
+	{
+		return this.calc;
+	}
+	
+	/**
+	 * gives the calculated path
+	 * 
+	 * @since 0.0.1
+	 * 
+	 * @return the result of the calculation, which will be empty, if no
+	 *         calculation was finished or no path was found
+	 */
+	public Set<Node> getPath()
+	{
+		if (this.path == null)
+		{
+			this.path = new LinkedHashSet<>();
+			
+			if (this.isCalc())
+			{
+				LinkedHashSet<Long> revPath = new LinkedHashSet<>();
+				try
+				{
+					long preId = this.predecessor.get(this.getDest().getId());
+					while (true)
+					{
+						revPath.add(preId);
+						
+						try
+						{
+							preId = this.predecessor.get(preId);
+						}
+						catch (NullPointerException e)
+						{
+							break;
+						}
+					}
+				}
+				catch (NullPointerException e)
+				{
+				}
+				
+				if ( ! (revPath.isEmpty()))
+				{
+					Iterator<Long> iter = (new LinkedList<>(revPath)).descendingIterator();
+					while (iter.hasNext())
+					{
+						this.path.add(this.getDataHandler().getNode(iter.next()));
+					}
+				}
+			}
+		}
+		
+		return this.path;
+	}
+	
+	/**
 	 * gives the calculated costs of {@code node}<br>
 	 * If no costs stored a <code>0</code> will be returned
 	 * 
@@ -231,19 +288,29 @@ public class Route
 	 * 
 	 * @since 0.0.1
 	 * 		
-	 * @param node the {@link Node} to get the neighbors from
+	 * @param currentNode the {@link Node} to get the neighbors from
 	 * @throws IOException if some {@link Entity}s couldn't got from the
 	 *             {@link Route#dataHandler}
 	 */
-	private void expand(Node node)
+	private void expand(Node currentNode)
 	throws IOException
 	{
-		Route.LOGGER.trace("Expand open list to direct neighbors of " + node);
+		Route.LOGGER.trace("Expand open list to direct neighbors of " + currentNode);
 		
 		DataHandler dataHandler = this.getDataHandler();
+		long currentNodeId = currentNode.getId();
+		double currentCalcCosts = this.getCalcCosts(currentNode);
 		
-		Route.LOGGER.trace("Iterate over all direct neighbors of " + node + ".");
-		for (Node successor : dataHandler.getNeighbours(node))
+		Route.LOGGER.trace("Iterate over all direct neighbors of " + currentNode + ".");
+		Node preNode = null;
+		try
+		{
+			preNode = dataHandler.getNode(this.predecessor.get(currentNodeId));
+		}
+		catch (NullPointerException e)
+		{
+		}
+		for (Node successor : dataHandler.getNeighbors(currentNode, preNode))
 		{
 			Route.LOGGER.trace("Processing successor " + successor + ".");
 			
@@ -256,7 +323,7 @@ public class Route
 				continue;
 			}
 			
-			double tentativeCosts = this.getCalcCosts(node) + Route.calcDistance(node, successor);
+			double tentativeCosts = currentCalcCosts + Route.calcDistance(currentNode, successor);
 			Route.LOGGER.trace("Tentative costs of " + successor + " are " + tentativeCosts + ".");
 			
 			if (this.openList.containsKey(successorId) && tentativeCosts >= this.getCalcCosts(successor))
@@ -266,8 +333,8 @@ public class Route
 				continue;
 			}
 			
-			Route.LOGGER.debug("Set " + node + " as  the predecessor of " + successor + ".");
-			this.predecessor.put(successorId, node.getId());
+			Route.LOGGER.debug("Set " + currentNode + " as  the predecessor of " + successor + ".");
+			this.predecessor.put(successorId, currentNodeId);
 			Route.LOGGER.trace("Save tentative costs of " + tentativeCosts + " for " + successor + ".");
 			this.calcCosts.put(successorId, tentativeCosts);
 			
@@ -293,7 +360,8 @@ public class Route
 		Route.LOGGER.debug("Start calculation of the path beween " + start + " and " + dest + ".");
 		
 		this.openList.put(start.getId(), 0D);
-		this.notCalc = false;
+		this.calc = true;
+		this.path = null;
 		
 		do
 		{

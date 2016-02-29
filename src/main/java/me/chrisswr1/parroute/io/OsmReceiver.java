@@ -28,15 +28,17 @@ import org.openstreetmap.osmosis.xml.v0_6.impl.OsmHandler;
 import org.xml.sax.SAXException;
 
 /**
- * defines a {@link DataReceiver} to request data directly from the OpenStreetMap API (version 0.6)
+ * defines a {@link DataReceiver} to request data directly from the
+ * OpenStreetMap API (version 0.6)
  * 
  * @deprecated Use {@link OverpassReceiver} instead
- * 			
+ * 
  * @version 0.0.1
  * @author ChrissW-R1
  * @since 0.0.1
- * 
- * @see <a href="http://wiki.openstreetmap.org/wiki/API_v0.6">API v0.6 – OpenStreetMap Wiki</a>
+ * 		
+ * @see <a href="http://wiki.openstreetmap.org/wiki/API_v0.6">API v0.6 –
+ *      OpenStreetMap Wiki</a>
  */
 @Deprecated
 public class OsmReceiver
@@ -53,7 +55,7 @@ implements DataReceiver
 	 * the {@link URL} of the OpenStreetMap API
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @see <a href="https://api.openstreetmap.org/api/0.6/">Official API
 	 *      URL</a>
 	 */
@@ -63,7 +65,7 @@ implements DataReceiver
 	 * constructor, with given API {@link URL}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param apiUrl the {@link URL} of the OpenStreetMap API (<b>Attention</b>:
 	 *            It is not recommend to use the official OSMF server, this API
 	 *            is primarily provided for editing the data and &quot;heavy
@@ -80,7 +82,7 @@ implements DataReceiver
 	 * creates a {@link HttpURLConnection} of the given API request
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param request the request for the API
 	 * @return the {@link HttpURLConnection}
 	 * @throws IOException if the connection couldn't established
@@ -115,7 +117,7 @@ implements DataReceiver
 	 * parse an {@link InputStream} with OpenStreetMap data XML document
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param is the {@link InputStream} to parse
 	 * @param types list of all {@link EntityType}s, which should be parsed (use
 	 *            <code>null</code> to parse all {@link EntityType}s)
@@ -123,7 +125,7 @@ implements DataReceiver
 	 *            to parse all ids)
 	 * @return a {@link Map}, which contains all parsed {@link Entity}s
 	 * @throws IOException if an error occurred while parsing the document
-	 * 			
+	 * 
 	 * @see OsmReceiver#parseStream(InputStream, EntityType, Collection)
 	 */
 	private static Set<Entity> parseStream(InputStream is, final Collection<? extends EntityType> types, final Collection<? extends Long> ids)
@@ -186,14 +188,14 @@ implements DataReceiver
 	 * parse an {@link InputStream} and filters only one {@link EntityType}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param is the {@link InputStream} to parse
 	 * @param type the {@link EntityType} to filter
 	 * @param ids the ids to filter
 	 * @return a {@link Map} of all parsed {@link Entity}s, filtered by
 	 *         {@code type} and {@code ids}
 	 * @throws IOException if the parsing failed
-	 * 			
+	 * 
 	 * @see OsmReceiver#parseStream(InputStream, Collection, Collection)
 	 */
 	private static Set<Entity> parseStream(InputStream is, EntityType type, final Collection<? extends Long> ids)
@@ -232,7 +234,7 @@ implements DataReceiver
 	 *      API v0.6 – OpenStreetMap Wiki</a>
 	 */
 	@Override
-	public Set<Way> getWaysOfNode(Node node)
+	public Set<Way> getWaysOf(Node node)
 	throws IOException
 	{
 		HttpURLConnection connection = this.getConnection("node/" + node.getId() + "/ways");
@@ -250,7 +252,7 @@ implements DataReceiver
 	}
 	
 	@Override
-	public Set<Relation> getRelsOfEntity(Entity entity)
+	public Set<Relation> getRelsOf(Entity entity)
 	throws IOException
 	{
 		HttpURLConnection connection = this.getConnection(entity.getType().toString().toLowerCase() + "/" + entity.getId() + "/relations");
@@ -271,13 +273,13 @@ implements DataReceiver
 	 * requests a OpenStreetMap feature by its id
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the requested {@link Entity}
 	 * @param type the {@link EntityType} of the requested feature
 	 * @return the requested feature
 	 * @throws IOException if the requested {@link Entity} doesn't exist or if a
 	 *             connection to the API couldn't established
-	 * 			
+	 * 
 	 * @see <a href=
 	 *      "http://wiki.openstreetmap.org/wiki/API_v0.6#Read:_GET_.2Fapi.2F0.6.2F.5Bnode.7Cway.7Crelation.5D.2F.23id">
 	 *      API v0.6 – OpenStreetMap Wiki</a>
@@ -333,7 +335,7 @@ implements DataReceiver
 	 * requests a list of {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param ids the ids of the requested {@link Entity}s
 	 * @param type the {@link EntityType} of the requested {@link Entity}s
 	 * @return a {@link Map} of all received {@link Entity}s
