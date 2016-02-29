@@ -19,7 +19,6 @@ import org.apache.logging.log4j.Logger;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
 
-import me.chrisswr1.parroute.io.OverpassHandler;
 import me.chrisswr1.parroute.util.CollectionUtils;
 import me.chrisswr1.parroute.util.GeoUtils;
 
@@ -37,69 +36,69 @@ public class Route
 	 * 
 	 * @since 0.0.1
 	 */
-	public static final Logger		LOGGER		= LogManager.getLogger(Route.class);
-												
+	public static final Logger	LOGGER		= LogManager.getLogger(Route.class);
+											
 	/**
-	 * the {@link OverpassHandler} to get the {@link Entity}s from
+	 * the {@link DataHandler} to get the {@link Entity}s from
 	 * 
 	 * @since 0.0.1
 	 */
-	private final OverpassHandler	dataHandler;
+	private final DataHandler	dataHandler;
 	/**
 	 * the {@link Node}, where the {@link Route} begins
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Node				start;
+	private final Node			start;
 	/**
 	 * the destination {@link Node} of the {@link Route}
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Node				dest;
+	private final Node			dest;
 	/**
 	 * if a calculation was ever called
 	 * 
 	 * @since 0.0.1
 	 */
-	private boolean					notCalc		= true;
-												
+	private boolean				notCalc		= true;
+											
 	/**
 	 * stores the predecessor of already proceeded {@link Node}s
 	 * 
 	 * @since 0.0.1
 	 */
-	private Map<Long, Long>			predecessor	= new HashMap<>();
+	private Map<Long, Long>		predecessor	= new HashMap<>();
 	/**
 	 * stores all loaded {@link Node} id, which have to be proceeded
 	 * 
 	 * @since 0.0.1
 	 */
-	private Map<Long, Double>		openList	= new HashMap<>();
+	private Map<Long, Double>	openList	= new HashMap<>();
 	/**
 	 * stores all {@link Node} id, to which the shortest route was already found
 	 * 
 	 * @since 0.0.1
 	 */
-	private Set<Long>				closedList	= new HashSet<>();
+	private Set<Long>			closedList	= new HashSet<>();
 	/**
 	 * stores the calculated costs of the proceeded {@link Node}s
 	 * 
 	 * @since 0.0.1
 	 */
-	private Map<Long, Double>		calcCosts	= new HashMap<>();
-												
+	private Map<Long, Double>	calcCosts	= new HashMap<>();
+											
 	/**
 	 * standard constructor
 	 * 
 	 * @since 0.0.1
-	 * 
-	 * @param dataHandler the {@link OverpassHandler} to get the {@link Entity}s
+	 * 		
+	 * @param dataHandler the {@link DataHandler} to get the {@link Entity}s
 	 *            from
 	 * @param start the {@link Node}, where the {@link Route} should begin
 	 * @param dest the destination, which should be reached by the {@link Route}
 	 */
-	public Route(OverpassHandler dataHandler, Node start, Node dest)
+	public Route(DataHandler dataHandler, Node start, Node dest)
 	{
 		this.dataHandler = dataHandler;
 		this.start = start;
@@ -151,7 +150,7 @@ public class Route
 	 * calculates the distance between two {@link Node}s
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node1 the first {@link Node}
 	 * @param node2 the second {@link Node}
 	 * @return the distance between {@code node1} and {@code node2}
@@ -162,13 +161,13 @@ public class Route
 	}
 	
 	/**
-	 * gives the {@link OverpassHandler} to get the {@link Entity}s from
+	 * gives the {@link DataHandler} to get the {@link Entity}s from
 	 * 
 	 * @since 0.0.1
-	 * 
-	 * @return the {@link OverpassHandler} to get the {@link Entity}s from
+	 * 		
+	 * @return the {@link DataHandler} to get the {@link Entity}s from
 	 */
-	public OverpassHandler getDataHandler()
+	public DataHandler getDataHandler()
 	{
 		return this.dataHandler;
 	}
@@ -177,7 +176,7 @@ public class Route
 	 * gives the {@link Node}, where the {@link Route} starts
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the start {@link Node}
 	 */
 	public Node getStart()
@@ -189,7 +188,7 @@ public class Route
 	 * gives the destination of the {@link Route}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the destination
 	 */
 	public Node getDest()
@@ -202,7 +201,7 @@ public class Route
 	 * If no costs stored a <code>0</code> will be returned
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to get the calculated costs from
 	 * @return the calculated costs
 	 */
@@ -231,7 +230,7 @@ public class Route
 	 * {@code nodeId}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to get the neighbors from
 	 * @throws IOException if some {@link Entity}s couldn't got from the
 	 *             {@link Route#dataHandler}
@@ -241,7 +240,7 @@ public class Route
 	{
 		Route.LOGGER.trace("Expand open list to direct neighbors of " + node);
 		
-		OverpassHandler dataHandler = this.getDataHandler();
+		DataHandler dataHandler = this.getDataHandler();
 		
 		Route.LOGGER.trace("Iterate over all direct neighbors of " + node + ".");
 		for (Node successor : dataHandler.getNeighbours(node))
@@ -280,7 +279,7 @@ public class Route
 	 * calculates the {@link Route}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return <code>true</code> if a path was found, <code>false</code>
 	 *         otherwise
 	 * @throws IOException if some {@link Entity}s couldn't got from the

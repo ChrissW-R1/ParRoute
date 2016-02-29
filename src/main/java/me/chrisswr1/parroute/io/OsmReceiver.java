@@ -6,7 +6,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -29,33 +28,32 @@ import org.openstreetmap.osmosis.xml.v0_6.impl.OsmHandler;
 import org.xml.sax.SAXException;
 
 /**
- * defines a handler to request data directly from the OpenStreetMap API
- * (version 0.6)
+ * defines a {@link DataReceiver} to request data directly from the OpenStreetMap API (version 0.6)
  * 
- * @deprecated Use {@link OverpassHandler} instead
- * 
+ * @deprecated Use {@link OverpassReceiver} instead
+ * 			
  * @version 0.0.1
  * @author ChrissW-R1
  * @since 0.0.1
- * 		
- * @see <a href="http://wiki.openstreetmap.org/wiki/API_v0.6">API v0.6 –
- *      OpenStreetMap Wiki</a>
+ * 
+ * @see <a href="http://wiki.openstreetmap.org/wiki/API_v0.6">API v0.6 – OpenStreetMap Wiki</a>
  */
 @Deprecated
-public class OsmHandler06
+public class OsmReceiver
+implements DataReceiver
 {
 	/**
 	 * the {@link Logger} of this class
 	 * 
 	 * @since 0.0.1
 	 */
-	public static final Logger	LOGGER	= LogManager.getLogger(OsmHandler06.class);
+	public static final Logger	LOGGER	= LogManager.getLogger(OsmReceiver.class);
 										
 	/**
 	 * the {@link URL} of the OpenStreetMap API
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @see <a href="https://api.openstreetmap.org/api/0.6/">Official API
 	 *      URL</a>
 	 */
@@ -65,7 +63,7 @@ public class OsmHandler06
 	 * constructor, with given API {@link URL}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param apiUrl the {@link URL} of the OpenStreetMap API (<b>Attention</b>:
 	 *            It is not recommend to use the official OSMF server, this API
 	 *            is primarily provided for editing the data and &quot;heavy
@@ -73,7 +71,7 @@ public class OsmHandler06
 	 *            <a href="http://wiki.openstreetmap.org/wiki/API_usage_policy">
 	 *            API usage policy</a>!)
 	 */
-	public OsmHandler06(URL apiUrl)
+	public OsmReceiver(URL apiUrl)
 	{
 		this.apiUrl = apiUrl;
 	}
@@ -82,7 +80,7 @@ public class OsmHandler06
 	 * creates a {@link HttpURLConnection} of the given API request
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param request the request for the API
 	 * @return the {@link HttpURLConnection}
 	 * @throws IOException if the connection couldn't established
@@ -92,14 +90,14 @@ public class OsmHandler06
 	{
 		String url = this.apiUrl.toString() + request;
 		
-		OsmHandler06.LOGGER.debug("Trying to connect to url: " + url);
+		OsmReceiver.LOGGER.debug("Trying to connect to url: " + url);
 		
 		URLConnection connection = (new URL(url)).openConnection();
 		connection.connect();
 		
 		if (connection instanceof HttpURLConnection)
 		{
-			OsmHandler06.LOGGER.debug("Connection successfully established.");
+			OsmReceiver.LOGGER.debug("Connection successfully established.");
 			
 			return (HttpURLConnection)connection;
 		}
@@ -108,7 +106,7 @@ public class OsmHandler06
 			IOUtils.close(connection);
 			
 			String msg = "The URL didn't point to a connection using HTTP!";
-			OsmHandler06.LOGGER.error(msg);
+			OsmReceiver.LOGGER.error(msg);
 			throw new IOException(msg);
 		}
 	}
@@ -117,7 +115,7 @@ public class OsmHandler06
 	 * parse an {@link InputStream} with OpenStreetMap data XML document
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param is the {@link InputStream} to parse
 	 * @param types list of all {@link EntityType}s, which should be parsed (use
 	 *            <code>null</code> to parse all {@link EntityType}s)
@@ -125,16 +123,16 @@ public class OsmHandler06
 	 *            to parse all ids)
 	 * @return a {@link Map}, which contains all parsed {@link Entity}s
 	 * @throws IOException if an error occurred while parsing the document
-	 * 
-	 * @see OsmHandler06#parseStream(InputStream, EntityType, Collection)
+	 * 			
+	 * @see OsmReceiver#parseStream(InputStream, EntityType, Collection)
 	 */
-	private static Map<? extends Long, ? extends Entity> parseStream(InputStream is, final Collection<? extends EntityType> types, final Collection<? extends Long> ids)
+	private static Set<Entity> parseStream(InputStream is, final Collection<? extends EntityType> types, final Collection<? extends Long> ids)
 	throws IOException
 	{
 		try
 		{
 			SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
-			final Map<Long, Entity> res = new HashMap<>();
+			final Set<Entity> res = new HashSet<>();
 			
 			Sink sink = new Sink()
 			{
@@ -168,7 +166,7 @@ public class OsmHandler06
 						return;
 					}
 					
-					res.put(id, entity);
+					res.add(entity);
 				}
 			};
 			
@@ -179,7 +177,7 @@ public class OsmHandler06
 		catch (ParserConfigurationException | SAXException e)
 		{
 			String msg = "An error occurred on parsing the OpenStreetMap data XML document!";
-			OsmHandler06.LOGGER.error(msg, e);
+			OsmReceiver.LOGGER.error(msg, e);
 			throw new IOException(msg, e);
 		}
 	}
@@ -188,36 +186,98 @@ public class OsmHandler06
 	 * parse an {@link InputStream} and filters only one {@link EntityType}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param is the {@link InputStream} to parse
 	 * @param type the {@link EntityType} to filter
 	 * @param ids the ids to filter
 	 * @return a {@link Map} of all parsed {@link Entity}s, filtered by
 	 *         {@code type} and {@code ids}
 	 * @throws IOException if the parsing failed
-	 * 
-	 * @see OsmHandler06#parseStream(InputStream, Collection, Collection)
+	 * 			
+	 * @see OsmReceiver#parseStream(InputStream, Collection, Collection)
 	 */
-	private static Map<? extends Long, ? extends Entity> parseStream(InputStream is, EntityType type, final Collection<? extends Long> ids)
+	private static Set<Entity> parseStream(InputStream is, EntityType type, final Collection<? extends Long> ids)
 	throws IOException
 	{
 		Set<EntityType> types = new HashSet<>();
 		types.add(type);
 		
-		return OsmHandler06.parseStream(is, types, ids);
+		return OsmReceiver.parseStream(is, types, ids);
+	}
+	
+	@Override
+	public Node getNode(long id)
+	throws IOException
+	{
+		return (Node)this.getEntity(id, EntityType.Node);
+	}
+	
+	@Override
+	public Way getWay(long id)
+	throws IOException
+	{
+		return (Way)this.getEntity(id, EntityType.Way);
+	}
+	
+	@Override
+	public Relation getRel(long id)
+	throws IOException
+	{
+		return (Relation)this.getEntity(id, EntityType.Relation);
+	}
+	
+	/**
+	 * @see <a href=
+	 *      "http://wiki.openstreetmap.org/wiki/API_v0.6#Ways_for_node:_GET_.2Fapi.2F0.6.2Fnode.2F.23id.2Fways">
+	 *      API v0.6 – OpenStreetMap Wiki</a>
+	 */
+	@Override
+	public Set<Way> getWaysOfNode(Node node)
+	throws IOException
+	{
+		HttpURLConnection connection = this.getConnection("node/" + node.getId() + "/ways");
+		
+		Set<Entity> entities = OsmReceiver.parseStream(connection.getInputStream(), EntityType.Way, null);
+		IOUtils.close(connection);
+		
+		Set<Way> res = new HashSet<>();
+		for (Entity entity : entities)
+		{
+			res.add((Way)entity);
+		}
+		
+		return res;
+	}
+	
+	@Override
+	public Set<Relation> getRelsOfEntity(Entity entity)
+	throws IOException
+	{
+		HttpURLConnection connection = this.getConnection(entity.getType().toString().toLowerCase() + "/" + entity.getId() + "/relations");
+		
+		Set<Entity> entities = OsmReceiver.parseStream(connection.getInputStream(), EntityType.Relation, null);
+		IOUtils.close(connection);
+		
+		Set<Relation> res = new HashSet<>();
+		for (Entity rel : entities)
+		{
+			res.add((Relation)rel);
+		}
+		
+		return res;
 	}
 	
 	/**
 	 * requests a OpenStreetMap feature by its id
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the requested {@link Entity}
 	 * @param type the {@link EntityType} of the requested feature
 	 * @return the requested feature
 	 * @throws IOException if the requested {@link Entity} doesn't exist or if a
 	 *             connection to the API couldn't established
-	 * 
+	 * 			
 	 * @see <a href=
 	 *      "http://wiki.openstreetmap.org/wiki/API_v0.6#Read:_GET_.2Fapi.2F0.6.2F.5Bnode.7Cway.7Crelation.5D.2F.23id">
 	 *      API v0.6 – OpenStreetMap Wiki</a>
@@ -229,7 +289,7 @@ public class OsmHandler06
 		HttpURLConnection connection = this.getConnection(typeString + "/" + id);
 		int statusCode = connection.getResponseCode();
 		
-		OsmHandler06.LOGGER.debug("OpenStreetMap API returned HTTP status code " + statusCode + ".");
+		OsmReceiver.LOGGER.debug("OpenStreetMap API returned HTTP status code " + statusCode + ".");
 		
 		if (statusCode >= 400)
 		{
@@ -249,38 +309,38 @@ public class OsmHandler06
 			
 			msg += "\r\n\tThe API reported:\r\n\t" + IOUtils.toString(connection.getErrorStream());
 			
-			OsmHandler06.LOGGER.error(msg);
+			OsmReceiver.LOGGER.error(msg);
 			throw new IOException(msg);
 		}
 		
 		Set<Long> ids = new HashSet<>();
 		ids.add(id);
 		
-		Map<? extends Long, ? extends Entity> entities = OsmHandler06.parseStream(connection.getInputStream(), type, ids);
+		Set<Entity> entities = OsmReceiver.parseStream(connection.getInputStream(), type, ids);
 		IOUtils.close(connection);
 		
 		if (entities.size() < 1)
 		{
 			String msg = "Couldn't received the requested " + typeString + " with id " + id + "!";
-			OsmHandler06.LOGGER.error(msg);
+			OsmReceiver.LOGGER.error(msg);
 			throw new IOException(msg);
 		}
 		
-		return entities.values().iterator().next();
+		return entities.iterator().next();
 	}
 	
 	/**
 	 * requests a list of {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param ids the ids of the requested {@link Entity}s
 	 * @param type the {@link EntityType} of the requested {@link Entity}s
 	 * @return a {@link Map} of all received {@link Entity}s
 	 * @throws IOException if the connection couldn't established or the parsing
 	 *             failed
 	 */
-	public Map<? extends Long, ? extends Entity> getEntities(Collection<? extends Long> ids, EntityType type)
+	public Set<Entity> getEntities(Collection<? extends Long> ids, EntityType type)
 	throws IOException
 	{
 		String typeString = type.toString().toLowerCase();
@@ -299,7 +359,7 @@ public class OsmHandler06
 		HttpURLConnection connection = this.getConnection(typeString + "s?" + typeString + "s=" + idString);
 		int statusCode = connection.getResponseCode();
 		
-		OsmHandler06.LOGGER.debug("OpenStreetMap API returned HTTP status code " + statusCode + ".");
+		OsmReceiver.LOGGER.debug("OpenStreetMap API returned HTTP status code " + statusCode + ".");
 		
 		if (statusCode >= 400)
 		{
@@ -319,71 +379,12 @@ public class OsmHandler06
 			
 			msg += "\r\n\tThe API reported:\r\n\t" + IOUtils.toString(connection.getErrorStream());
 			
-			OsmHandler06.LOGGER.error(msg);
+			OsmReceiver.LOGGER.error(msg);
 			throw new IOException(msg);
 		}
 		
-		Map<? extends Long, ? extends Entity> res = OsmHandler06.parseStream(connection.getInputStream(), type, ids);
+		Set<Entity> res = OsmReceiver.parseStream(connection.getInputStream(), type, ids);
 		IOUtils.close(connection);
-		
-		return res;
-	}
-	
-	/**
-	 * requests all {@link Way}s on which {@code node} is a part from
-	 * 
-	 * @since 0.0.1
-	 * 		
-	 * @param node the {@link Node} to get the {@link Way}s from
-	 * @return the {@link Way}s which contains {@code node}
-	 * @throws IOException if the connection couldn't established or the
-	 *             response couldn't parsed
-	 * 
-	 * @see <a href=
-	 *      "http://wiki.openstreetmap.org/wiki/API_v0.6#Ways_for_node:_GET_.2Fapi.2F0.6.2Fnode.2F.23id.2Fways">
-	 *      API v0.6 – OpenStreetMap Wiki</a>
-	 */
-	public Map<? extends Long, ? extends Way> getWaysOfNode(Node node)
-	throws IOException
-	{
-		HttpURLConnection connection = this.getConnection("node/" + node.getId() + "/ways");
-		
-		Map<? extends Long, ? extends Entity> entities = OsmHandler06.parseStream(connection.getInputStream(), EntityType.Way, null);
-		IOUtils.close(connection);
-		
-		Map<Long, Way> res = new HashMap<>();
-		for (long id : entities.keySet())
-		{
-			res.put(id, (Way)entities.get(id));
-		}
-		
-		return res;
-	}
-	
-	/**
-	 * requests all {@link Relation}, which {@code entity} is a member from
-	 * 
-	 * @since 0.0.1
-	 * 		
-	 * @param entity the {@link Entity} to get the {@link Relation}s from
-	 * @return a {@link Map} of all {@link Relation}s, which have {@code entity}
-	 *         as member
-	 * @throws IOException if the connection couldn't established or the parsing
-	 *             failed
-	 */
-	public Map<? extends Long, ? extends Relation> getRelationsOfEntity(Entity entity)
-	throws IOException
-	{
-		HttpURLConnection connection = this.getConnection(entity.getType().toString().toLowerCase() + "/" + entity.getId() + "/relations");
-		
-		Map<? extends Long, ? extends Entity> entities = OsmHandler06.parseStream(connection.getInputStream(), EntityType.Relation, null);
-		IOUtils.close(connection);
-		
-		Map<Long, Relation> res = new HashMap<>();
-		for (long id : entities.keySet())
-		{
-			res.put(id, (Relation)entities.get(id));
-		}
 		
 		return res;
 	}

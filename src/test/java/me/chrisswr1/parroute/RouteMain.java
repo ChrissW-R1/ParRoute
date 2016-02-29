@@ -9,7 +9,7 @@ import org.openstreetmap.osmosis.core.container.v0_6.EntityContainer;
 import org.openstreetmap.osmosis.xml.common.CompressionMethod;
 import org.openstreetmap.osmosis.xml.v0_6.XmlWriter;
 
-import me.chrisswr1.parroute.io.OverpassHandler;
+import me.chrisswr1.parroute.io.OverpassReceiver;
 
 /**
  * tests the {@link Route} class with calculation in M&uuml;nster
@@ -49,9 +49,13 @@ public class RouteMain
 		
 		try
 		{
-			OverpassHandler handler = new OverpassHandler();
+			OverpassReceiver receiver = new OverpassReceiver();
+			DataHandler handler = new DataHandler(receiver);
+			receiver.setStore(handler);
+			
 			long start = 962137765;
 			long dest = 42907635;
+			
 			Route route = new Route(handler, handler.getNode(start), handler.getNode(dest));
 			
 			RouteMain.LOGGER.debug("Start calculation of a route from " + route.getStart() + " to " + route.getDest() + ".");

@@ -6,7 +6,6 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import org.junit.Assert;
@@ -21,7 +20,7 @@ import org.openstreetmap.osmosis.core.domain.v0_6.Tag;
 import org.openstreetmap.osmosis.core.domain.v0_6.Way;
 
 /**
- * defines test cases of the {@link OsmHandler06} {@link Class}
+ * defines test cases of the {@link OsmReceiver} {@link Class}
  * 
  * @version 0.0.1
  * @author ChrissW-R1
@@ -35,13 +34,13 @@ public class OsmHandler06Test
 	 * @since 0.0.1
 	 */
 	@SuppressWarnings("deprecation")
-	private OsmHandler06 handler;
+	private OsmReceiver receiver;
 	
 	/**
 	 * initialize the test object
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @throws MalformedURLException if the test object couldn't initialized
 	 */
 	@SuppressWarnings("deprecation")
@@ -49,11 +48,11 @@ public class OsmHandler06Test
 	public void setUp()
 	throws MalformedURLException
 	{
-		this.handler = new OsmHandler06(new URL("https://api.openstreetmap.org/api/0.6/"));
+		this.receiver = new OsmReceiver(new URL("https://api.openstreetmap.org/api/0.6/"));
 	}
 	
 	/**
-	 * Test method for {@link OsmHandler06#getEntity(long, EntityType)}.
+	 * Test method for {@link OsmReceiver#getEntity(long, EntityType)}.
 	 */
 	@Test
 	public void testRequestEntity()
@@ -61,7 +60,7 @@ public class OsmHandler06Test
 		try
 		{
 			@SuppressWarnings("deprecation")
-			Entity entity = this.handler.getEntity(269636333, EntityType.Way);
+			Entity entity = this.receiver.getEntity(269636333, EntityType.Way);
 			Assert.assertEquals(269636333, entity.getId());
 			Assert.assertEquals(EntityType.Way, entity.getType());
 			
@@ -91,7 +90,8 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmHandler06#getEntities(Collection, EntityType)}.
+	 * Test method for {@link OsmReceiver#getEntities(Collection, EntityType)}
+	 * .
 	 */
 	@Test
 	public void testRequestEntities()
@@ -107,13 +107,15 @@ public class OsmHandler06Test
 		try
 		{
 			@SuppressWarnings("deprecation")
-			Map<? extends Long, ? extends Entity> entities = this.handler.getEntities(new HashSet<>(Arrays.asList(ids)), EntityType.Way);
-			Set<? extends Long> keys = entities.keySet();
+			Set<Entity> entities = this.receiver.getEntities(new HashSet<>(Arrays.asList(ids)), EntityType.Way);
 			
-			for (long id : ids)
+			Set<Long> idSet = new HashSet<>();
+			for (Entity entity : entities)
 			{
-				Assert.assertTrue(keys.contains(id));
+				idSet.add(entity.getId());
 			}
+			
+			Assert.assertTrue(idSet.containsAll(Arrays.asList(ids)));
 		}
 		catch (IOException e)
 		{
@@ -122,7 +124,7 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmHandler06#getWaysOfNode(Node)}.
+	 * Test method for {@link OsmReceiver#getWaysOfNode(Node)}.
 	 */
 	@Test
 	public void testRequestWaysOfNode()
@@ -131,18 +133,27 @@ public class OsmHandler06Test
 		Node node = Mockito.mock(Node.class);
 		Mockito.when(node.getId()).thenReturn(nodeId);
 		
+		Long[] wayIds =
+		{
+				269636333L,
+				5881250L,
+				5738250L,
+				5881251L
+		};
+		
 		try
 		{
 			@SuppressWarnings("deprecation")
-			Map<? extends Long, ? extends Way> ways = this.handler.getWaysOfNode(node);
+			Set<Way> ways = this.receiver.getWaysOfNode(node);
 			Assert.assertTrue(ways.size() >= 2);
 			
-			Set<? extends Long> keys = ways.keySet();
+			Set<Long> idSet = new HashSet<>();
+			for (Way way : ways)
+			{
+				idSet.add(way.getId());
+			}
 			
-			Assert.assertTrue(keys.contains(269636333L));
-			Assert.assertTrue(keys.contains(5881250L));
-			Assert.assertTrue(keys.contains(5738250L));
-			Assert.assertTrue(keys.contains(5881251L));
+			Assert.assertTrue(idSet.containsAll(Arrays.asList(wayIds)));
 		}
 		catch (IOException e)
 		{
@@ -151,7 +162,7 @@ public class OsmHandler06Test
 	}
 	
 	/**
-	 * Test method for {@link OsmHandler06#getRelationsOfEntity(Entity)}.
+	 * Test method for {@link OsmReceiver#getRelsOfEntity(Entity)}.
 	 */
 	@Test
 	public void testRequestRelationsOfEntity()
@@ -161,32 +172,42 @@ public class OsmHandler06Test
 		Mockito.when(way.getType()).thenReturn(EntityType.Way);
 		Mockito.when(way.getId()).thenReturn(wayId);
 		
+		Long[] relIds =
+		{
+				5633210L,
+				5633244L,
+				5634106L,
+				5634231L,
+				5634288L,
+				5634287L,
+				5634107L,
+				5634230L,
+				5634955L,
+				5634956L,
+				5635160L,
+				5635161L,
+				5635481L,
+				5635482L,
+				5635027L,
+				5635028L,
+				5635546L,
+				5635547L,
+				5633686L,
+				5639688L
+		};
+		
 		try
 		{
 			@SuppressWarnings("deprecation")
-			Map<? extends Long, ? extends Relation> rels = this.handler.getRelationsOfEntity(way);
-			Set<? extends Long> keys = rels.keySet();
+			Set<Relation> rels = this.receiver.getRelsOfEntity(way);
 			
-			Assert.assertTrue(keys.contains(5633210L));
-			Assert.assertTrue(keys.contains(5633244L));
-			Assert.assertTrue(keys.contains(5634106L));
-			Assert.assertTrue(keys.contains(5634231L));
-			Assert.assertTrue(keys.contains(5634288L));
-			Assert.assertTrue(keys.contains(5634287L));
-			Assert.assertTrue(keys.contains(5634107L));
-			Assert.assertTrue(keys.contains(5634230L));
-			Assert.assertTrue(keys.contains(5634955L));
-			Assert.assertTrue(keys.contains(5634956L));
-			Assert.assertTrue(keys.contains(5635160L));
-			Assert.assertTrue(keys.contains(5635161L));
-			Assert.assertTrue(keys.contains(5635481L));
-			Assert.assertTrue(keys.contains(5635482L));
-			Assert.assertTrue(keys.contains(5635027L));
-			Assert.assertTrue(keys.contains(5635028L));
-			Assert.assertTrue(keys.contains(5635546L));
-			Assert.assertTrue(keys.contains(5635547L));
-			Assert.assertTrue(keys.contains(5633686L));
-			Assert.assertTrue(keys.contains(5639688L));
+			Set<Long> idSet = new HashSet<>();
+			for (Relation rel : rels)
+			{
+				idSet.add(rel.getId());
+			}
+			
+			Assert.assertTrue(idSet.containsAll(Arrays.asList(relIds)));
 		}
 		catch (IOException e)
 		{
