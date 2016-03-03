@@ -105,7 +105,7 @@ public class DataHandler
 	 * constructor, with given {@link DataReceiver}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param receiver the {@link DataReceiver} to get the {@link Entity}s from
 	 */
 	public DataHandler(DataReceiver receiver)
@@ -128,7 +128,7 @@ public class DataHandler
 	 * {@code key} and at least it ignores the case of the keys
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param entity the {@link Entity} to search in
 	 * @param key the {@link Tag} key to look for
 	 * @return the value of {@link Tag} with {@code key} in {@code entity}
@@ -165,7 +165,7 @@ public class DataHandler
 	 * gives the {@link RelationType} of a specific {@link Relation}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param rel the {@link Relation} to get the {@link RelationType} from
 	 * @return the {@link RelationType} of {@code rel}
 	 */
@@ -185,10 +185,40 @@ public class DataHandler
 	}
 	
 	/**
-	 * checks if the specific {@link Node} is at the end of a {@link Way}
+	 * gives all indices of a {@link Node} in a {@link Way}
 	 * 
 	 * @since 0.0.1
 	 * 		
+	 * @param node the {@link Node} to get the indices of
+	 * @param way the {@link Way} in which to search {@code node} for
+	 * @return a {@link Set} of all indices of {@code node} in {@code way}
+	 */
+	public static Set<Integer> getIndices(Node node, Way way)
+	{
+		DataHandler.LOGGER.trace("Get all indices of " + node + " in " + way + ".");
+		
+		long nodeId = node.getId();
+		
+		Set<Integer> res = new HashSet<>();
+		int idx = 0;
+		for (WayNode wayNode : way.getWayNodes())
+		{
+			if (wayNode.getNodeId() == nodeId)
+			{
+				res.add(idx);
+			}
+			
+			idx++;
+		}
+		
+		return res;
+	}
+	
+	/**
+	 * checks if the specific {@link Node} is at the end of a {@link Way}
+	 * 
+	 * @since 0.0.1
+	 * 
 	 * @param node the {@link Node} to check for end
 	 * @param way the {@link Way} to look in
 	 * @return <code>true</code> if {@code node} is on an end of {@code way}
@@ -205,7 +235,7 @@ public class DataHandler
 	 * gives the {@link DataReceiver}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the {@link DataReceiver} to get the {@link Entity}s from
 	 */
 	public DataReceiver getReceiver()
@@ -217,12 +247,12 @@ public class DataHandler
 	 * stores an {@link Entity} and all indices of it
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param entity the {@link Entity} to store
 	 * @return the previous stored {@link Entity}, with the same
 	 *         {@link EntityType} and id or <code>null</code>, if there was
 	 *         previously nothing stored
-	 * 
+	 * 		
 	 * @see DataHandler#store(Collection)
 	 */
 	public Entity store(Entity entity)
@@ -284,9 +314,9 @@ public class DataHandler
 	 * stores a {@link Collection} of {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param entities all {@link Entity}s to store
-	 * 
+	 * 			
 	 * @see DataHandler#store(Entity)
 	 */
 	public void store(Collection<? extends Entity> entities)
@@ -301,7 +331,7 @@ public class DataHandler
 	 * gives a {@link Node} from the store
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the {@link Node}
 	 * @return the {@link Node} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -310,17 +340,18 @@ public class DataHandler
 	{
 		DataHandler.LOGGER.trace("Get node with id " + id + ".");
 		
-		try
+		DataReceiver receiver = this.getReceiver();
+		if ( ! (receiver.isAllStored() || this.nodes.containsKey(id)))
 		{
-			if ( ! (this.nodes.containsKey(id)))
+			try
 			{
 				DataHandler.LOGGER.debug("Node with id " + id + " is currently not stored. Requesting it.");
-				this.store(this.getReceiver().getNode(id));
+				this.store(receiver.getNode(id));
 			}
-		}
-		catch (IOException e)
-		{
-			DataHandler.LOGGER.error("Couldn't receive node " + id + " from " + this.getReceiver() + "!", e);
+			catch (IOException e)
+			{
+				DataHandler.LOGGER.error("Couldn't receive node " + id + " from " + receiver + "!", e);
+			}
 		}
 		
 		return this.nodes.get(id);
@@ -330,7 +361,7 @@ public class DataHandler
 	 * gives a {@link Way} from the store
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the {@link Way}
 	 * @return the {@link Way} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -339,17 +370,18 @@ public class DataHandler
 	{
 		DataHandler.LOGGER.trace("Get way with id " + id + ".");
 		
-		try
+		DataReceiver receiver = this.getReceiver();
+		if ( ! (receiver.isAllStored() || this.ways.containsKey(id)))
 		{
-			if ( ! (this.ways.containsKey(id)))
+			try
 			{
 				DataHandler.LOGGER.debug("Way with id " + id + " is currently not stored. Requesting it.");
-				this.store(this.getReceiver().getWay(id));
+				this.store(receiver.getWay(id));
 			}
-		}
-		catch (IOException e)
-		{
-			DataHandler.LOGGER.error("Couldn't receive way " + id + " from " + this.getReceiver() + "!", e);
+			catch (IOException e)
+			{
+				DataHandler.LOGGER.error("Couldn't receive way " + id + " from " + receiver + "!", e);
+			}
 		}
 		
 		return this.ways.get(id);
@@ -359,7 +391,7 @@ public class DataHandler
 	 * gives a {@link Relation} from the store
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param id the id of the {@link Relation}
 	 * @return the {@link Relation} with id {@code id} or <code>null</code>, if
 	 *         it doesn't exist
@@ -368,17 +400,18 @@ public class DataHandler
 	{
 		DataHandler.LOGGER.trace("Get relation with id " + id + ".");
 		
-		try
+		DataReceiver receiver = this.getReceiver();
+		if ( ! (receiver.isAllStored() || this.rels.containsKey(id)))
 		{
-			if ( ! (this.rels.containsKey(id)))
+			try
 			{
 				DataHandler.LOGGER.debug("Relation with id " + id + " is currently not stored. Requesting it.");
-				this.store(this.getReceiver().getRel(id));
+				this.store(receiver.getRel(id));
 			}
-		}
-		catch (IOException e)
-		{
-			DataHandler.LOGGER.error("Couldn't receive relation " + id + " from " + this.getReceiver() + "!", e);
+			catch (IOException e)
+			{
+				DataHandler.LOGGER.error("Couldn't receive relation " + id + " from " + receiver + "!", e);
+			}
 		}
 		
 		return this.rels.get(id);
@@ -388,7 +421,7 @@ public class DataHandler
 	 * gives all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
 	 */
@@ -398,20 +431,21 @@ public class DataHandler
 		
 		long id = node.getId();
 		
-		try
+		DataReceiver receiver = this.getReceiver();
+		if ( ! (receiver.isAllStored() || this.allWaysOfNodeStored.contains(id)))
 		{
-			if ( ! (this.allWaysOfNodeStored.contains(id)))
+			try
 			{
 				DataHandler.LOGGER.debug("Not sure, if all ways of " + node + " were stored. Requesting them.");
-				this.store(this.getReceiver().getWaysOf(node));
+				this.store(receiver.getWaysOf(node));
 				
 				DataHandler.LOGGER.trace("Mark all ways of " + node + " as already stored.");
 				this.allWaysOfNodeStored.add(id);
 			}
-		}
-		catch (IOException e)
-		{
-			DataHandler.LOGGER.error("Couldn't receive ways of " + node + " from " + this.getReceiver() + "!", e);
+			catch (IOException e)
+			{
+				DataHandler.LOGGER.error("Couldn't receive ways of " + node + " from " + receiver + "!", e);
+			}
 		}
 		
 		Set<Way> res = new HashSet<>();
@@ -427,7 +461,7 @@ public class DataHandler
 	 * gives all {@link Relation}s of which {@code entity} is a member
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
 	 * @return a {@link Set} of all {@link Relation}s, which have {@code entity}
 	 *         as a member
@@ -439,21 +473,22 @@ public class DataHandler
 		long id = entity.getId();
 		EntityType type = entity.getType();
 		
-		try
+		DataReceiver receiver = this.getReceiver();
+		Set<Long> allStoredSet = this.allRelsOfEntityStored.get(type);
+		if ( ! (receiver.isAllStored() || allStoredSet.contains(id)))
 		{
-			Set<Long> allStoredSet = this.allRelsOfEntityStored.get(type);
-			if ( ! (allStoredSet.contains(id)))
+			try
 			{
 				DataHandler.LOGGER.debug("Not sure, if all relations of " + entity + " were stored. Requesting them.");
-				this.store(this.getReceiver().getRelsOf(entity));
+				this.store(receiver.getRelsOf(entity));
 				
 				DataHandler.LOGGER.trace("Mark all relations of " + entity + " as already stored.");
 				allStoredSet.add(id);
 			}
-		}
-		catch (IOException e)
-		{
-			DataHandler.LOGGER.error("Couldn't receive relations of " + entity + " from " + this.getReceiver() + "!", e);
+			catch (IOException e)
+			{
+				DataHandler.LOGGER.error("Couldn't receive relations of " + entity + " from " + receiver + "!", e);
+			}
 		}
 		
 		Set<Relation> res = new HashSet<>();
@@ -466,40 +501,10 @@ public class DataHandler
 	}
 	
 	/**
-	 * gives all indices of a {@link Node} in a {@link Way}
-	 * 
-	 * @since 0.0.1
-	 * 
-	 * @param node the {@link Node} to get the indices of
-	 * @param way the {@link Way} in which to search {@code node} for
-	 * @return a {@link Set} of all indices of {@code node} in {@code way}
-	 */
-	public Set<Integer> getIndices(Node node, Way way)
-	{
-		DataHandler.LOGGER.trace("Get all indices of " + node + " in " + way + ".");
-		
-		long nodeId = node.getId();
-		
-		Set<Integer> res = new HashSet<>();
-		int idx = 0;
-		for (WayNode wayNode : way.getWayNodes())
-		{
-			if (wayNode.getNodeId() == nodeId)
-			{
-				res.add(idx);
-			}
-			
-			idx++;
-		}
-		
-		return res;
-	}
-	
-	/**
 	 * gives all direct neighbors of a {@link Node} in a specific {@link Way}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to get the neighbors from
 	 * @param way the {@link Way} to search in
 	 * @return a {@link Set} of all neighbors of {@code node} in {@code way}
@@ -511,7 +516,7 @@ public class DataHandler
 		Set<Node> res = new HashSet<>();
 		Oneway oneway = Oneway.get(way);
 		
-		for (int idx : this.getIndices(node, way))
+		for (int idx : DataHandler.getIndices(node, way))
 		{
 			List<WayNode> wayNodes = way.getWayNodes();
 			
@@ -560,7 +565,7 @@ public class DataHandler
 	 * {@link Node}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param via the {@link Node} to search the neighbors for
 	 * @param from the {@link Node}, from which the path come to {@code node}
 	 * @return a {@link Set} of all found neighbors
@@ -646,7 +651,7 @@ public class DataHandler
 	 * to {@code to}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param from the start {@link Node} of the connection
 	 * @param to the destination {@link Node} of the connection
 	 * @return a {@link Set}, which contains all direct connections
@@ -672,7 +677,7 @@ public class DataHandler
 	 * gives a {@link Set} of all stored {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return a {@link Set} of all stored {@link Entity}s bundled to
 	 *         {@link EntityContainer}s
 	 */

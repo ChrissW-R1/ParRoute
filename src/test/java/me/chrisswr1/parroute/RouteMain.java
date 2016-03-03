@@ -25,7 +25,8 @@ import com.topografix.gpx.ObjectFactory;
 import com.topografix.gpx.RteType;
 import com.topografix.gpx.WptType;
 
-import me.chrisswr1.parroute.io.OverpassReceiver;
+import me.chrisswr1.parroute.io.OsmFileFormat;
+import me.chrisswr1.parroute.io.OsmFileReceiver;
 import me.chrisswr1.parroute.util.GeoUtils;
 
 /**
@@ -57,7 +58,7 @@ public class RouteMain
 	 * main method
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param args arguments from the console
 	 */
 	public static void main(String[] args)
@@ -66,7 +67,8 @@ public class RouteMain
 		
 		try
 		{
-			OverpassReceiver receiver = new OverpassReceiver();
+			// OverpassReceiver receiver = new OverpassReceiver();
+			OsmFileReceiver receiver = new OsmFileReceiver(new File("src/test/resources/kuhviertel.osm"), OsmFileFormat.XML, CompressionMethod.None);
 			DataHandler handler = new DataHandler(receiver);
 			receiver.setStore(handler);
 			
@@ -114,8 +116,8 @@ public class RouteMain
 						GeoUtils.transform(pos, gpxCrs);
 						
 						WptType wayPoint = new WptType();
-						wayPoint.setLon(new BigDecimal(pos.getOrdinate(0)));
-						wayPoint.setLat(new BigDecimal(pos.getOrdinate(1)));
+						wayPoint.setLat(new BigDecimal(pos.getOrdinate(0)));
+						wayPoint.setLon(new BigDecimal(pos.getOrdinate(1)));
 						
 						gpxRoute.getRtept().add(wayPoint);
 					}
