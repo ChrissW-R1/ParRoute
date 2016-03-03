@@ -2,12 +2,13 @@ package me.chrisswr1.parroute;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import org.apache.commons.collections4.SetValuedMap;
 import org.apache.commons.collections4.multimap.HashSetValuedHashMap;
@@ -60,19 +61,19 @@ public class DataHandler
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Map<Long, Node>							nodes					= new HashMap<>();
+	private final Map<Long, Node>							nodes					= new TreeMap<>();
 	/**
 	 * stores all received {@link Way}s
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Map<Long, Way>							ways					= new HashMap<>();
+	private final Map<Long, Way>							ways					= new TreeMap<>();
 	/**
 	 * stores all received {@link Relation}s
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Map<Long, Relation>						rels					= new HashMap<>();
+	private final Map<Long, Relation>						rels					= new TreeMap<>();
 	/**
 	 * stores mappings of {@link Way}s, which a {@link Node} is a member of
 	 * 
@@ -85,27 +86,27 @@ public class DataHandler
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Map<EntityType, SetValuedMap<Long, Long>>	relsOfEntity			= new HashMap<>();
+	private final Map<EntityType, SetValuedMap<Long, Long>>	relsOfEntity			= new TreeMap<>();
 																					
 	/**
 	 * stores, from which {@link Node}s the {@link Way}s were already received
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Set<Long>									allWaysOfNodeStored		= new HashSet<>();
+	private final Set<Long>									allWaysOfNodeStored		= new TreeSet<>();
 	/**
 	 * stores, from which {@link Entity}s the {@link Relation}s were already
 	 * received
 	 * 
 	 * @since 0.0.1
 	 */
-	private final Map<EntityType, Set<Long>>				allRelsOfEntityStored	= new HashMap<>();
+	private final Map<EntityType, Set<Long>>				allRelsOfEntityStored	= new TreeMap<>();
 																					
 	/**
 	 * constructor, with given {@link DataReceiver}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param receiver the {@link DataReceiver} to get the {@link Entity}s from
 	 */
 	public DataHandler(DataReceiver receiver)
@@ -116,9 +117,9 @@ public class DataHandler
 		this.relsOfEntity.put(EntityType.Way, new HashSetValuedHashMap<Long, Long>());
 		this.relsOfEntity.put(EntityType.Relation, new HashSetValuedHashMap<Long, Long>());
 		
-		this.allRelsOfEntityStored.put(EntityType.Node, new HashSet<Long>());
-		this.allRelsOfEntityStored.put(EntityType.Way, new HashSet<Long>());
-		this.allRelsOfEntityStored.put(EntityType.Relation, new HashSet<Long>());
+		this.allRelsOfEntityStored.put(EntityType.Node, new TreeSet<Long>());
+		this.allRelsOfEntityStored.put(EntityType.Way, new TreeSet<Long>());
+		this.allRelsOfEntityStored.put(EntityType.Relation, new TreeSet<Long>());
 	}
 	
 	/**
@@ -128,7 +129,7 @@ public class DataHandler
 	 * {@code key} and at least it ignores the case of the keys
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param entity the {@link Entity} to search in
 	 * @param key the {@link Tag} key to look for
 	 * @return the value of {@link Tag} with {@code key} in {@code entity}
@@ -165,7 +166,7 @@ public class DataHandler
 	 * gives the {@link RelationType} of a specific {@link Relation}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param rel the {@link Relation} to get the {@link RelationType} from
 	 * @return the {@link RelationType} of {@code rel}
 	 */
@@ -188,7 +189,7 @@ public class DataHandler
 	 * gives all indices of a {@link Node} in a {@link Way}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the indices of
 	 * @param way the {@link Way} in which to search {@code node} for
 	 * @return a {@link Set} of all indices of {@code node} in {@code way}
@@ -218,7 +219,7 @@ public class DataHandler
 	 * checks if the specific {@link Node} is at the end of a {@link Way}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @param node the {@link Node} to check for end
 	 * @param way the {@link Way} to look in
 	 * @return <code>true</code> if {@code node} is on an end of {@code way}
@@ -235,7 +236,7 @@ public class DataHandler
 	 * gives the {@link DataReceiver}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the {@link DataReceiver} to get the {@link Entity}s from
 	 */
 	public DataReceiver getReceiver()
@@ -247,12 +248,12 @@ public class DataHandler
 	 * stores an {@link Entity} and all indices of it
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param entity the {@link Entity} to store
 	 * @return the previous stored {@link Entity}, with the same
 	 *         {@link EntityType} and id or <code>null</code>, if there was
 	 *         previously nothing stored
-	 * 		
+	 * 
 	 * @see DataHandler#store(Collection)
 	 */
 	public Entity store(Entity entity)
@@ -314,9 +315,9 @@ public class DataHandler
 	 * stores a {@link Collection} of {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param entities all {@link Entity}s to store
-	 * 			
+	 * 
 	 * @see DataHandler#store(Entity)
 	 */
 	public void store(Collection<? extends Entity> entities)
@@ -331,7 +332,7 @@ public class DataHandler
 	 * gives a {@link Node} from the store
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Node}
 	 * @return the {@link Node} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -361,7 +362,7 @@ public class DataHandler
 	 * gives a {@link Way} from the store
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Way}
 	 * @return the {@link Way} with id {@code id} or <code>null</code>, if it
 	 *         doesn't exist
@@ -391,7 +392,7 @@ public class DataHandler
 	 * gives a {@link Relation} from the store
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param id the id of the {@link Relation}
 	 * @return the {@link Relation} with id {@code id} or <code>null</code>, if
 	 *         it doesn't exist
@@ -421,7 +422,7 @@ public class DataHandler
 	 * gives all {@link Way}s on which {@code node} is a part from
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the {@link Way}s from
 	 * @return the {@link Way}s which contains {@code node}
 	 */
@@ -461,7 +462,7 @@ public class DataHandler
 	 * gives all {@link Relation}s of which {@code entity} is a member
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param entity the {@link Entity} to get the {@link Relation}s from
 	 * @return a {@link Set} of all {@link Relation}s, which have {@code entity}
 	 *         as a member
@@ -504,7 +505,7 @@ public class DataHandler
 	 * gives all direct neighbors of a {@link Node} in a specific {@link Way}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the neighbors from
 	 * @param way the {@link Way} to search in
 	 * @return a {@link Set} of all neighbors of {@code node} in {@code way}
@@ -565,7 +566,7 @@ public class DataHandler
 	 * {@link Node}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param via the {@link Node} to search the neighbors for
 	 * @param from the {@link Node}, from which the path come to {@code node}
 	 * @return a {@link Set} of all found neighbors
@@ -651,7 +652,7 @@ public class DataHandler
 	 * to {@code to}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param from the start {@link Node} of the connection
 	 * @param to the destination {@link Node} of the connection
 	 * @return a {@link Set}, which contains all direct connections
@@ -677,7 +678,7 @@ public class DataHandler
 	 * gives a {@link Set} of all stored {@link Entity}s
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return a {@link Set} of all stored {@link Entity}s bundled to
 	 *         {@link EntityContainer}s
 	 */

@@ -1,10 +1,6 @@
-package me.chrisswr1.parroute;
+package me.chrisswr1.parroute.route;
 
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,14 +9,15 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openstreetmap.osmosis.core.domain.v0_6.Entity;
 import org.openstreetmap.osmosis.core.domain.v0_6.Node;
 
+import me.chrisswr1.parroute.DataHandler;
 import me.chrisswr1.parroute.util.CollectionUtils;
 import me.chrisswr1.parroute.util.GeoUtils;
+import me.chrisswr1.parroute.util.JosmDebugger;
 
 /**
  * defines a route between two {@link Node}s
@@ -98,7 +95,7 @@ public class Route
 	 * standard constructor
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param dataHandler the {@link DataHandler} to get the {@link Entity}s
 	 *            from
 	 * @param start the {@link Node}, where the {@link Route} should begin
@@ -142,7 +139,7 @@ public class Route
 	 * calculates the distance between two {@link Node}s
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node1 the first {@link Node}
 	 * @param node2 the second {@link Node}
 	 * @return the distance between {@code node1} and {@code node2}
@@ -156,7 +153,7 @@ public class Route
 	 * gives the {@link DataHandler} to get the {@link Entity}s from
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return the {@link DataHandler} to get the {@link Entity}s from
 	 */
 	public DataHandler getDataHandler()
@@ -168,7 +165,7 @@ public class Route
 	 * gives the {@link Node}, where the {@link Route} starts
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the start {@link Node}
 	 */
 	public Node getStart()
@@ -180,7 +177,7 @@ public class Route
 	 * gives the destination of the {@link Route}
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the destination
 	 */
 	public Node getDest()
@@ -192,7 +189,7 @@ public class Route
 	 * is the route already calculated
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return <code>true</code>, if the calculation was already started,
 	 *         <code>false</code> otherwise
 	 */
@@ -205,7 +202,7 @@ public class Route
 	 * gives the calculated path
 	 * 
 	 * @since 0.0.1
-	 * 
+	 * 		
 	 * @return the result of the calculation, which will be empty, if no
 	 *         calculation was finished or no path was found
 	 */
@@ -258,7 +255,7 @@ public class Route
 	 * If no costs stored a <code>0</code> will be returned
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param node the {@link Node} to get the calculated costs from
 	 * @return the calculated costs
 	 */
@@ -287,7 +284,7 @@ public class Route
 	 * {@code nodeId}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @param currentNode the {@link Node} to get the neighbors from
 	 * @throws IOException if some {@link Entity}s couldn't got from the
 	 *             {@link Route#dataHandler}
@@ -346,7 +343,7 @@ public class Route
 	 * calculates the {@link Route}
 	 * 
 	 * @since 0.0.1
-	 * 		
+	 * 
 	 * @return <code>true</code> if a path was found, <code>false</code>
 	 *         otherwise
 	 * @throws IOException if some {@link Entity}s couldn't got from the
@@ -371,28 +368,7 @@ public class Route
 			this.openList.remove(currentNode);
 			
 			Node node = this.getDataHandler().getNode(currentNode);
-			try
-			{
-				double lat = node.getLatitude();
-				double lng = node.getLongitude();
-				double diff = 0.0000001;
-				URLConnection connection = (new URL("http://127.0.0.1:8111/load_and_zoom?left=" + (lng - diff) + "&top=" + (lat + diff) + "&right=" + (lng + diff) + "&bottom=" + (lat - diff) + "&select=node" + currentNode)).openConnection();
-				connection.connect();
-				if (connection instanceof HttpURLConnection)
-				{
-					HttpURLConnection httpConnection = (HttpURLConnection)connection;
-					httpConnection.getResponseCode();
-				}
-				else
-				{
-					Route.LOGGER.warn("No HTTP endpoint found on JOSM!");
-				}
-				IOUtils.close(connection);
-			}
-			catch (ConnectException e)
-			{
-				Route.LOGGER.warn("No HTTP endpoint found on JOSM!");
-			}
+			JosmDebugger.showEntity(node);
 			
 			if (currentNode == dest.getId())
 			{

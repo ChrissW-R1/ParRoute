@@ -27,6 +27,7 @@ import com.topografix.gpx.WptType;
 
 import me.chrisswr1.parroute.io.OsmFileFormat;
 import me.chrisswr1.parroute.io.OsmFileReceiver;
+import me.chrisswr1.parroute.route.Route;
 import me.chrisswr1.parroute.util.GeoUtils;
 
 /**
